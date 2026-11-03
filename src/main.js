@@ -258,7 +258,7 @@ function updateDriving(dt){
   vehicle.applyEngineForce(force,1);vehicle.applyEngineForce(force,3);
   for(let i=0;i<4;i++)vehicle.setBrake(braking?240:0,i);
   if(nitro)state.nitro=clamp(state.nitro-dt*24,0,100);else state.nitro=clamp(state.nitro+dt*6,0,100);
-  if(!accelerate&&!braking&&speed>1){vehicle.applyEngineForce(Math.min(900,speed*18),1);vehicle.applyEngineForce(Math.min(900,speed*18),3);}
+  if(!accelerate&&!braking&&speed>1){vehicle.applyEngineForce(-Math.min(900,speed*18),1);vehicle.applyEngineForce(-Math.min(900,speed*18),3);}
   const drag=Math.min(18000,speed*speed*2.2);chassis.applyForce(new CANNON.Vec3(0,0,drag),chassis.position);
   world.step(1/60,dt,4);
   if(-chassis.velocity.z>88)chassis.velocity.z=-88;
@@ -325,7 +325,6 @@ function animate(){
   }
   composer.render();
 }
-window.__NH_DEBUG__=()=>({mode:state.mode,position:{x:chassis.position.x,y:chassis.position.y,z:chassis.position.z},velocity:{x:chassis.velocity.x,y:chassis.velocity.y,z:chassis.velocity.z},wheels:vehicle.wheelInfos.map(w=>({contact:w.isInContact,suspension:w.suspensionForce,engine:w.engineForce}))});
 function boot(){
   try{
     setupScene();
