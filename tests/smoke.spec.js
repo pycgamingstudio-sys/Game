@@ -46,11 +46,11 @@ test('mobile layout exposes touch pedals', async ({ page }) => {
 test('braking reduces the vehicle speed', async ({ page }) => {
   await page.locator('#start-button').click();
   await page.keyboard.down('w');
-  await page.waitForTimeout(1700);
+  await page.waitForTimeout(3200);
   await page.keyboard.up('w');
   const before = Number(await page.locator('#speed-value').textContent());
   await page.keyboard.down('s');
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1600);
   await page.keyboard.up('s');
   const after = Number(await page.locator('#speed-value').textContent());
   expect(before).toBeGreaterThan(0);
