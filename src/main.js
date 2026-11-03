@@ -265,7 +265,7 @@ function updateDriving(dt){
   const target=new THREE.Vector3(chassis.position.x*.45,3.8,chassis.position.z+10.5);
   camera.position.lerp(target,1-Math.exp(-dt*3.2));
   camera.lookAt(chassis.position.x*.35,1.05,chassis.position.z-8);
-  camera.fov+=(nitro?70:62-camera.fov)*(1-Math.exp(-dt*3));camera.updateProjectionMatrix();
+  const targetFov=nitro?70:62;camera.fov+=(targetFov-camera.fov)*(1-Math.exp(-dt*3));camera.updateProjectionMatrix();
   if(performance.now()-lastHud>90){updateHud();lastHud=performance.now();}
 }
 function updateHud(){
