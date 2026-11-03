@@ -3,7 +3,7 @@
 A browser-based 3D night-drive prototype built with Three.js, Vite and cannon-es.
 
 ## Requirements
-- Node.js 20 or newer
+- Node.js 22 or newer
 - npm
 
 ## Local development
