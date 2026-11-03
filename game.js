@@ -151,14 +151,14 @@
     worldGroup.add(g);pillars.push(g);
   }
   function makeGantry(z){
-    const g=new THREE.Group();g.position.z=z;
+    const g=new THREE.Group();g.position.z=z;g.userData.baseZ=z;
     const metal=mat(0x202636,.4,.8);
     box(.28,7,.3,metal,-8.5,3.5,0,g);box(.28,7,.3,metal,8.5,3.5,0,g);box(17,.28,.3,metal,0,7,0,g);
     for(const x of [-6,0,6]){
       const lamp=new THREE.PointLight(0x9deaff,1.1,20);lamp.position.set(x,6.5,1);g.add(lamp);
       const bulb=new THREE.Mesh(new THREE.SphereGeometry(.16,6,6),new THREE.MeshBasicMaterial({color:0xc9faff}));bulb.position.set(x,6.5,0);g.add(bulb);
     }
-    worldGroup.add(g);pillars.push(g);
+    worldGroup.add(g);pillars.push(g);return g;
   }
   function spawnTraffic(z){
     const lane=Math.floor(Math.random()*3);
