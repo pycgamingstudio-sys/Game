@@ -19,7 +19,7 @@ const choose=(a)=>a[Math.floor(Math.random()*a.length)];
 const isTouch=matchMedia('(pointer:coarse)').matches;
 const lanes=[-4.4,0,4.4];
 const state={mode:'loading',elapsed:0,distance:0,score:0,nitro:100,lane:1,steer:0,accelerate:false,brake:false,boost:false,finish:0,garage:0,spawn:0,nextSpawn:100};
-let scene,camera,renderer,composer,bloom,clock,world,vehicle,chassis,carRoot;
+let scene,camera,renderer,composer,bloom,clock,world,vehicle,chassis,carRoot,keyLight;
 let roadSegments=[],buildings=[],traffic=[],wheelMeshes=[],headlights=[];
 let roadTexture,roadMaterial,quality='ultra',lastHud=0;
 const mats={};
@@ -153,7 +153,7 @@ function setupScene(){
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   $('canvas-container').appendChild(renderer.domElement);
   scene.add(new THREE.HemisphereLight(0x7772b0,0x090b14,1.1));
-  const moon=new THREE.DirectionalLight(0xb6d2ff,2.1);moon.position.set(-35,55,-45);moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);moon.shadow.camera.left=-35;moon.shadow.camera.right=35;moon.shadow.camera.top=45;moon.shadow.camera.bottom=-25;moon.shadow.bias=-.0002;scene.add(moon);
+  keyLight=new THREE.DirectionalLight(0xb6d2ff,2.1);keyLight.position.set(-35,55,-45);keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);keyLight.shadow.camera.left=-35;keyLight.shadow.camera.right=35;keyLight.shadow.camera.top=45;keyLight.shadow.camera.bottom=-25;keyLight.shadow.bias=-.0002;scene.add(keyLight);
   const blue=glow(scene,0x322cff,2.2,150,[-25,14,-90]);const pink=glow(scene,0xff258c,2.1,140,[26,10,-140]);
   const starGeo=new THREE.BufferGeometry(),stars=[];
   for(let i=0;i<900;i++)stars.push(rand(-320,320),rand(20,150),rand(-650,80));
@@ -178,6 +178,7 @@ function applyQuality(value){
   renderer.setPixelRatio(Math.min(devicePixelRatio,config.ratio));renderer.setSize(innerWidth,innerHeight);
   composer.setSize(innerWidth,innerHeight);bloom.strength=config.bloom;renderer.toneMappingExposure=config.exposure;
   renderer.shadowMap.enabled=value!=='performance';
+  if(keyLight){keyLight.shadow.mapSize.set(config.shadows,config.shadows);if(keyLight.shadow.map)keyLight.shadow.map.dispose();keyLight.shadow.needsUpdate=true;}
   renderer.shadowMap.needsUpdate=true;
   $('quality-select').value=value;
 }
@@ -243,14 +244,16 @@ function updateDriving(dt){
   const nitro=(keys.has('Space')||keys.has('ShiftLeft')||keys.has('ShiftRight')||state.boost)&&state.nitro>0&&!braking;
   const steer=(right?1:0)-(left?1:0);
   const maxSteer=.42;const steering=steer*maxSteer;
-  vehicle.setSteeringValue(steering,0);vehicle.setSteeringValue(steering,1);
+  vehicle.setSteeringValue(steering,0);vehicle.setSteeringValue(steering,2);
   const speed=chassis.velocity.length();
   const force=accelerate||speed<3?-(nitro?9200:6500):0;
-  vehicle.applyEngineForce(force,2);vehicle.applyEngineForce(force,3);
+  vehicle.applyEngineForce(force,1);vehicle.applyEngineForce(force,3);
   for(let i=0;i<4;i++)vehicle.setBrake(braking?240:0,i);
   if(nitro)state.nitro=clamp(state.nitro-dt*24,0,100);else state.nitro=clamp(state.nitro+dt*6,0,100);
-  if(!accelerate&&!braking&&speed>1){vehicle.applyEngineForce(-Math.min(900,speed*18),2);vehicle.applyEngineForce(-Math.min(900,speed*18),3);}
+  if(!accelerate&&!braking&&speed>1){vehicle.applyEngineForce(-Math.min(900,speed*18),1);vehicle.applyEngineForce(-Math.min(900,speed*18),3);}
+  const drag=Math.min(18000,speed*speed*2.2);chassis.applyForce(new CANNON.Vec3(0,0,drag),chassis.position);
   world.step(1/60,dt,4);
+  if(-chassis.velocity.z>88)chassis.velocity.z=-88;
   const forwardSpeed=Math.max(0,-chassis.velocity.z);
   state.distance+=forwardSpeed*dt;
   state.score+=Math.floor(forwardSpeed*dt*.6);
