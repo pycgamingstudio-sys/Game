@@ -173,7 +173,7 @@
     for(let z=-100;z<=400;z+=100)makeRoadSegment(z);
     for(let z=-100;z<500;z+=30){makeBuilding(-1,z);makeBuilding(1,z+15);}
     for(let z=-90;z<480;z+=15){makePillar(z%30===0?-1:1,z);}
-    for(let z=-50;z<500;z+=100)makeGantry(z);
+    for(let z=-50;z<500;z+=100){const gantry=makeGantry(z);gantry.userData.gantry=true;}
   }
   function initScene(){
     scene=new THREE.Scene();scene.background=new THREE.Color(0x05040d);scene.fog=new THREE.FogExp2(0x100b22,.0065);
@@ -332,7 +332,7 @@
       menuAngle+=dt*.22;
       if(player){player.position.y=Math.sin(elapsed*1.4)*.035;player.rotation.y=Math.sin(menuAngle)*.06;camera.position.x=Math.sin(menuAngle)*.7;camera.position.y=5.1+Math.sin(menuAngle*.7)*.25;camera.lookAt(0,1,-2);}
       updateParticles(dt);
-    }else if(state==='paused){updateParticles(dt);}
+    }else if(state==='paused'){updateParticles(dt);}
     if(renderer&&scene&&camera)renderer.render(scene,camera);
   }
   function boot(){
