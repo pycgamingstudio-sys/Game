@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#050509">
+  <meta name="description" content="NEON HORIZON — a cinematic cyberpunk 3D highway racer.">
+  <title>NEON HORIZON — Cyberpunk Racer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script defer src="./game.js"></script>
+</head>
+<body>
+  <div id="canvas-container" aria-label="3D racing game viewport"></div>
+  <div class="vignette"></div>
+  <div id="splash-screen" class="screen active">
+    <div class="splash-content">
+      <div class="brand-mark">NH<span>///</span></div>
+      <h1>NEON <b>HORIZON</b></h1>
+      <p class="eyebrow">HIGH PERFORMANCE // NIGHT DRIVE</p>
+      <div class="progress-track"><div id="loading-progress"></div></div>
+      <p id="loading-label">INITIALIZING NEURAL LINK... 0%</p>
+    </div>
+  </div>
+  <main id="main-menu" class="screen">
+    <header class="menu-header">
+      <div class="brand-lockup"><span class="brand-icon">◈</span><div><strong>NEON HORIZON</strong><small>CYBERPUNK MOTORSPORT</small></div></div>
+      <div class="version-tag">BUILD 01 <i></i> WEBGL</div>
+    </header>
+    <section class="menu-center">
+      <p class="eyebrow">THE CITY NEVER SLEEPS</p>
+      <h1>OWN THE<br><span>NIGHT.</span></h1>
+      <p class="menu-copy">One road. Endless neon. How far can you go?</p>
+      <div class="menu-actions">
+        <button id="start-button" class="neon-button primary"><span>START ENGINE</span><b>↗</b></button>
+        <button id="garage-button" class="neon-button secondary">GARAGE / CUSTOMIZE</button>
+      </div>
+      <p id="garage-note" class="garage-note" aria-live="polite">GARAGE // OBSIDIAN SPEC SELECTED</p>
+    </section>
+    <footer class="menu-footer"><span>© 2026 PLIVEX STUDIOS</span><span>DEVELOPED FOR PROS <b>◆</b></span></footer>
+  </main>
+  <section id="hud-overlay" class="hud hidden" aria-live="polite">
+    <div class="hud-top">
+      <div class="hud-card"><small>DISTANCE</small><strong id="distance-value">000000<span>m</span></strong><small id="score-value">SCORE 000000</small></div>
+      <div class="hud-card speed-card"><small>VELOCITY</small><strong><span id="speed-value">000</span><em>KM/H</em></strong><div class="speed-line"><i id="speed-line-fill"></i></div></div>
+    </div>
+    <button id="pause-button" class="pause-button" aria-label="Pause game">Ⅱ</button>
+    <div class="hud-bottom">
+      <div class="nitro-label"><span>NITRO SYSTEM</span><b id="nitro-percent">100%</b></div>
+      <div class="nitro-track"><i id="nitro-fill"></i></div>
+      <p id="control-hint">A / D OR ← / → TO STEER &nbsp; • &nbsp; SPACE TO BOOST</p>
+    </div>
+    <div id="touch-zones" class="touch-zones"><div class="touch-side left">BRAKE</div><div class="touch-side right">HOLD TO BOOST</div></div>
+  </section>
+  <section id="pause-screen" class="screen modal-screen">
+    <div class="modal-panel"><p class="eyebrow">SYSTEM HALTED</p><h2>PAUSED</h2><button id="resume-button" class="neon-button primary">RESUME DRIVE</button><button id="quit-button" class="neon-button secondary">MAIN MENU</button></div>
+  </section>
+  <section id="game-over-screen" class="screen modal-screen">
+    <div class="modal-panel"><p class="eyebrow">RUN COMPLETE</p><h2>GAME OVER</h2><div class="final-score"><small>FINAL DISTANCE</small><strong id="final-distance">000000<span>m</span></strong><small>FINAL SCORE</small><b id="final-score">000000</b></div><button id="play-again-button" class="neon-button primary">PLAY AGAIN <b>↗</b></button><button id="menu-button" class="neon-button secondary">MAIN MENU</button></div>
+  </section>
+  <div id="toast" role="status"></div>
+</body>
+</html>
