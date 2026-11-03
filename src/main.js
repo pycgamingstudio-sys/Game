@@ -141,7 +141,7 @@ function setupPhysics(){
   vehicle=new CANNON.RaycastVehicle({chassisBody:chassis,indexRightAxis:0,indexUpAxis:1,indexForwardAxis:2});
   const wheelOptions={
     radius:.43,directionLocal:new CANNON.Vec3(0,-1,0),axleLocal:new CANNON.Vec3(-1,0,0),
-    suspensionStiffness:34,suspensionRestLength:.34,frictionSlip:4.2,
+    suspensionStiffness:34,suspensionRestLength:.58,frictionSlip:4.2,
     dampingRelaxation:2.4,dampingCompression:4.6,maxSuspensionForce:100000,
     rollInfluence:.08,customSlidingRotationalSpeed:-30,useCustomSlidingRotationalSpeed:true
   };
