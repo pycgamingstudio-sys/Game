@@ -32,12 +32,14 @@ test('keyboard throttle produces measurable speed', async ({ page }) => {
   await page.keyboard.down('w');
   await page.waitForTimeout(1400);
   await page.keyboard.up('w');
+  console.log('VEHICLE_DEBUG', JSON.stringify(await page.evaluate(() => window.__NH_DEBUG__())));
   const speed = Number(await page.locator('#speed-value').textContent());
   expect(speed).toBeGreaterThan(0);
 });
 
 test('mobile layout exposes touch pedals', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#start-button').click();
   await expect(page.locator('#brake-button')).toBeVisible();
   await expect(page.locator('#boost-button')).toBeVisible();
 });
