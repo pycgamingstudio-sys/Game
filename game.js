@@ -16,7 +16,7 @@
   const rand = (a,b) => a + Math.random() * (b-a);
   const choose = (a) => a[Math.floor(Math.random()*a.length)];
   const isMobile = () => matchMedia('(pointer: coarse)').matches || innerWidth < 700;
-  let scene, camera, renderer, clock, player, roadGroup, worldGroup, trafficGroup;
+  let scene, camera, renderer, composer, bloomPass, clock, player, roadGroup, worldGroup, trafficGroup;
   let roadSegments=[], buildings=[], pillars=[], traffic=[], particles=[];
   let state='loading', elapsed=0, distance=0, score=0, speed=0, nitro=100;
   let targetLane=0, laneX=0, boosting=false, braking=false, pausedFrom='playing';
@@ -57,8 +57,8 @@
   }
   function makeCar(color=0x090d16,withLights=true){
     const group=new THREE.Group();
-    const bodyMat=new THREE.MeshStandardMaterial({color,metalness:.95,roughness:.17});
-    const glassMat=mat(0x07111c,.08,.9,0x071a2c,.35);
+    const bodyMat=new THREE.MeshPhysicalMaterial({color,metalness:.92,roughness:.16,clearcoat:1,clearcoatRoughness:.08,reflectivity:.9});
+    const glassMat=new THREE.MeshPhysicalMaterial({color:0x07111c,metalness:.72,roughness:.08,clearcoat:1,clearcoatRoughness:.04,transparent:true,opacity:.92});
     const rubber=mat(0x050608,.82,.12),rim=mat(0x111d28,.3,.85,0x00dfff,.18);
     const orange=new THREE.MeshBasicMaterial({color:0xff7628});
     const red=new THREE.MeshBasicMaterial({color:0xff173d});
@@ -71,6 +71,14 @@
     // angular nose and rear aero deck
     const nose=new THREE.Mesh(new THREE.ConeGeometry(1.65,.9,4),bodyMat);nose.rotation.x=-Math.PI/2;nose.rotation.z=Math.PI/4;nose.scale.set(1,.5,1.45);nose.position.set(0,.68,-3.12);group.add(nose);
     box(3.35,.16,.65,bodyMat,0,.72,3.05,group);
+    // Rear diffuser, aero wing and sculpted side intakes.
+    box(3.15,.12,.42,mat(0x05080d,.22,.92),0,.28,3.35,group);
+    box(2.85,.10,.22,mat(0x202a35,.3,.8),0,1.34,3.08,group);
+    for(const s of [-1,1]){
+      box(.12,.48,.14,mat(0x111821,.3,.8),s*1.3,1.12,3.0,group);
+      const intake=box(.08,.3,.65,mat(0x030609,.3,.65),s*1.68,.66,.75,group);
+      intake.rotation.z=s*.12;
+    }
     box(3.7,.12,.22,mat(0x11151c,.25,.8),0,.38,3.15,group);
     // Side skirts and door seams.
     for(const s of [-1,1]){
@@ -99,9 +107,33 @@
     group.userData.bodyMaterial=bodyMat;
     return group;
   }
+  function makeAsphaltTexture(){
+    const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#171a22';ctx.fillRect(0,0,512,512);
+    const pixels=ctx.createImageData(512,512);
+    for(let i=0;i<pixels.data.length;i+=4){
+      const n= Math.floor(20+Math.random()*24);
+      pixels.data[i]=n;pixels.data[i+1]=n+1;pixels.data[i+2]=n+5;pixels.data[i+3]=255;
+    }
+    ctx.putImageData(pixels,0,0);
+    for(let i=0;i<850;i++){
+      ctx.fillStyle=Math.random()>.5?'rgba(190,205,220,.055)':'rgba(0,0,0,.12)';
+      ctx.fillRect(Math.random()*512,Math.random()*512,Math.random()*3+.4,Math.random()*2+.4);
+    }
+    const texture=new THREE.CanvasTexture(canvas);
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(2,12);
+    texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    texture.encoding=THREE.sRGBEncoding;
+    return texture;
+  }
+  let asphaltTexture=null;
   function makeRoadSegment(z){
     const g=new THREE.Group();g.position.z=z;
-    box(18,.22,100,mat(0x11131c,.28,.82),0,-.14,0,g);
+    if(!asphaltTexture)asphaltTexture=makeAsphaltTexture();
+    const roadMaterial=new THREE.MeshPhysicalMaterial({color:0x777b86,map:asphaltTexture,roughness:.34,metalness:.24,clearcoat:.72,clearcoatRoughness:.22});
+    const road=new THREE.Mesh(new THREE.BoxGeometry(18,.22,100),roadMaterial);
+    road.position.set(0,-.14,0);road.receiveShadow=true;g.add(road);
     // Shoulder strips and side barriers.
     for(const s of [-1,1]){
       box(.22,.5,100,mat(0x181522,.25,.7),s*9.2,.1,0,g);
@@ -180,14 +212,25 @@
     camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,650);
     camera.position.set(0,5.5,11);camera.lookAt(0,1,-8);
     renderer=new THREE.WebGLRenderer({antialias:!isMobile(),alpha:false,powerPreference:'high-performance'});
-    renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile()?1.5:2));
+    const maxRatio=isMobile()?1.5:2;
+    renderer.setPixelRatio(Math.min(devicePixelRatio,maxRatio));
     renderer.setSize(innerWidth,innerHeight);
-    renderer.shadowMap.enabled=!isMobile();renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-    renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.outputEncoding=THREE.sRGBEncoding;
+    renderer.physicallyCorrectLights=true;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
+    if(THREE.EffectComposer&&THREE.UnrealBloomPass){
+      composer=new THREE.EffectComposer(renderer);
+      composer.addPass(new THREE.RenderPass(scene,camera));
+      bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),isMobile()?.55:.82,.58,.76);
+      composer.addPass(bloomPass);
+    }
     $('canvas-container').appendChild(renderer.domElement);
-    scene.add(new THREE.HemisphereLight(0x4b3b72,0x080812,1.05));
+    scene.add(new THREE.HemisphereLight(0x7862a8,0x080812,1.25));
+    const cityFill=new THREE.PointLight(0x3b2bff,1.1,95);cityFill.position.set(-18,12,-38);scene.add(cityFill);
+    const neonFill=new THREE.PointLight(0xff258d,1.35,85);neonFill.position.set(20,9,-58);scene.add(neonFill);
     const moon=new THREE.DirectionalLight(0xa9c5ff,1.15);moon.position.set(-25,40,-35);moon.castShadow=!isMobile();
-    moon.shadow.mapSize.set(1024,1024);moon.shadow.camera.left=-28;moon.shadow.camera.right=28;moon.shadow.camera.top=35;moon.shadow.camera.bottom=-20;scene.add(moon);
+    moon.shadow.mapSize.set(isMobile()?1024:2048,isMobile()?1024:2048);moon.shadow.camera.left=-28;moon.shadow.camera.right=28;moon.shadow.camera.top=35;moon.shadow.camera.bottom=-20;moon.shadow.bias=-.00025;scene.add(moon);
     const sun=new THREE.Mesh(new THREE.CircleGeometry(22,48),new THREE.MeshBasicMaterial({color:0x6a1ca8,transparent:true,opacity:.45}));sun.position.set(0,32,-230);scene.add(sun);
     // Procedural star field.
     const starGeo=new THREE.BufferGeometry(),starPos=[];
@@ -202,7 +245,7 @@
   function onResize(){
     if(!camera||!renderer)return;
     camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
-    renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile()?1.5:2));renderer.setSize(innerWidth,innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile()?1.5:2));renderer.setSize(innerWidth,innerHeight);if(composer)composer.setSize(innerWidth,innerHeight);
   }
   function clearTraffic(){
     traffic.forEach(c=>trafficGroup.remove(c));traffic.length=0;
@@ -333,7 +376,7 @@
       if(player){player.position.y=Math.sin(elapsed*1.4)*.035;player.rotation.y=Math.sin(menuAngle)*.06;camera.position.x=Math.sin(menuAngle)*.7;camera.position.y=5.1+Math.sin(menuAngle*.7)*.25;camera.lookAt(0,1,-2);}
       updateParticles(dt);
     }else if(state==='paused'){updateParticles(dt);}
-    if(renderer&&scene&&camera)renderer.render(scene,camera);
+    if(renderer&&scene&&camera){if(composer)composer.render(dt);else renderer.render(scene,camera);}
   }
   function boot(){
     if(!window.THREE){ui.loading.textContent='WEBGL ENGINE FAILED TO LOAD';return;}
