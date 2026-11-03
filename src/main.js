@@ -325,6 +325,7 @@ function animate(){
   }
   composer.render();
 }
+window.__NH_DEBUG__=()=>({mode:state.mode,position:{x:chassis.position.x,y:chassis.position.y,z:chassis.position.z},velocity:{x:chassis.velocity.x,y:chassis.velocity.y,z:chassis.velocity.z},wheels:vehicle.wheelInfos.map(w=>({contact:w.isInContact,suspension:w.suspensionForce,engine:w.engineForce}))});
 function boot(){
   try{
     setupScene();
