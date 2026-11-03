@@ -26,3 +26,18 @@ test('graphics quality can be changed without reloading', async ({ page }) => {
   await page.locator('#quality-select').selectOption('performance');
   await expect(page.locator('#quality-select')).toHaveValue('performance');
 });
+
+test('keyboard throttle produces measurable speed', async ({ page }) => {
+  await page.locator('#start-button').click();
+  await page.keyboard.down('w');
+  await page.waitForTimeout(1400);
+  await page.keyboard.up('w');
+  const speed = Number(await page.locator('#speed-value').textContent());
+  expect(speed).toBeGreaterThan(0);
+});
+
+test('mobile layout exposes touch pedals', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#brake-button')).toBeVisible();
+  await expect(page.locator('#boost-button')).toBeVisible();
+});
