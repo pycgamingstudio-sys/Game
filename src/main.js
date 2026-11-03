@@ -254,9 +254,12 @@ function updateDriving(dt){
   const maxSteer=.42;const steering=steer*maxSteer;
   vehicle.setSteeringValue(steering,0);vehicle.setSteeringValue(steering,2);
   const speed=chassis.velocity.length();
-  const force=accelerate||speed<3?(nitro?9200:6500):0;
+  const force=accelerate||speed<3?(nitro?4600:3250):0;
   vehicle.applyEngineForce(force,1);vehicle.applyEngineForce(force,3);
-  for(let i=0;i<4;i++)vehicle.setBrake(braking?240:0,i);
+  if(force>0)chassis.applyForce(new CANNON.Vec3(0,0,-force),chassis.position);
+  for(let i=0;i<4;i++)vehicle.setBrake(braking?420:0,i);
+  const longitudinal=-chassis.velocity.z;
+  if(braking&&Math.abs(longitudinal)>.05){const brakeForce=Math.min(9000,Math.abs(longitudinal)*1800);chassis.applyForce(new CANNON.Vec3(0,0,Math.sign(longitudinal)*brakeForce),chassis.position);}
   if(nitro)state.nitro=clamp(state.nitro-dt*24,0,100);else state.nitro=clamp(state.nitro+dt*6,0,100);
   if(!accelerate&&!braking&&speed>1){vehicle.applyEngineForce(-Math.min(900,speed*18),1);vehicle.applyEngineForce(-Math.min(900,speed*18),3);}
   const drag=Math.min(18000,speed*speed*2.2);chassis.applyForce(new CANNON.Vec3(0,0,drag),chassis.position);
