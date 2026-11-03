@@ -143,7 +143,7 @@
     worldGroup.add(g);buildings.push(g);
   }
   function makePillar(side,z){
-    const g=new THREE.Group();g.position.set(side*10.5,0,z);
+    const g=new THREE.Group();g.position.set(side*10.5,0,z);g.userData.baseZ=z;
     const stem=new THREE.Mesh(new THREE.CylinderGeometry(.12,.2,3.6,7),mat(0x182b35,.35,.85));stem.position.y=1.8;g.add(stem);
     const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(1.0,0),new THREE.MeshBasicMaterial({color:0x37ffd0,wireframe:true}));crystal.position.y=4.0;g.add(crystal);
     const core=new THREE.Mesh(new THREE.OctahedronGeometry(.48,0),new THREE.MeshBasicMaterial({color:0x20eaff}));core.position.y=4;g.add(core);
@@ -213,7 +213,7 @@
     clearTraffic();player.position.set(0,0,4);player.rotation.set(0,0,0);
     roadSegments.forEach((r,i)=>r.position.z=-100+i*100);
     buildings.forEach((b,i)=>b.position.z=-100+Math.floor(i/2)*30+(i%2?15:0));
-    pillars.forEach((p,i)=>{if(p.userData.gantry)p.position.z=-50+Math.floor(i/3)*100;else p.position.z=-90+i*15;});
+    pillars.forEach(p=>{p.position.z=p.userData.baseZ;});
     ui.nitro.style.width='100%';ui.nitroPct.textContent='100%';
   }
   function startGame(){
