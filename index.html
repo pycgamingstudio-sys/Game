@@ -2,73 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#050509">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="NEON HORIZON — a cinematic cyberpunk 3D highway racer.">
-  <title>NEON HORIZON — Ultra Night Drive</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#05060b">
+  <meta name="description" content="NEON HORIZON — a cinematic 3D night-drive experience.">
+  <title>NEON HORIZON — Night Drive</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-  <script defer src="./game.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="canvas-container" aria-label="3D racing game viewport"></div>
-  <div class="vignette"></div>
-  <div id="splash-screen" class="screen active">
-    <div class="splash-content">
-      <div class="brand-mark">NH<span>///</span></div>
-      <h1>NEON <b>HORIZON</b></h1>
-      <p class="eyebrow">HIGH PERFORMANCE // NIGHT DRIVE</p>
-      <div class="progress-track"><div id="loading-progress"></div></div>
-      <p id="loading-label">INITIALIZING NEURAL LINK... 0%</p>
-    </div>
-  </div>
-  <main id="main-menu" class="screen">
-    <header class="menu-header">
-      <div class="brand-lockup"><span class="brand-icon">◈</span><div><strong>NEON HORIZON</strong><small>CYBERPUNK MOTORSPORT</small></div></div>
-      <div class="version-tag">BUILD 01 <i></i> WEBGL</div>
+  <div id="game-root">
+    <div id="canvas-container" aria-label="NEON HORIZON 3D game"></div>
+    <div class="vignette"></div>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Neon Horizon home"><span class="brand-symbol">◈</span><span>NEON <b>HORIZON</b><small>NIGHT DRIVE SIMULATOR</small></span></a>
+      <div class="top-actions"><label class="quality-label" for="quality-select">GRAPHICS</label><select id="quality-select" aria-label="Graphics quality"><option value="ultra">ULTRA</option><option value="high">HIGH</option><option value="balanced">BALANCED</option><option value="performance">PERFORMANCE</option></select></div>
     </header>
-    <section class="menu-center">
-      <p class="eyebrow">THE CITY NEVER SLEEPS</p>
-      <h1>OWN THE<br><span>NIGHT.</span></h1>
-      <p class="menu-copy">One road. Endless neon. How far can you go?</p>
-      <div class="menu-actions">
-        <button id="start-button" class="neon-button primary"><span>START ENGINE</span><b>↗</b></button>
-        <button id="garage-button" class="neon-button secondary">GARAGE / CUSTOMIZE</button>
+    <main id="main-menu" class="screen active">
+      <div class="menu-copy">
+        <p class="eyebrow">THE CITY NEVER SLEEPS</p>
+        <h1>OWN THE<br><span>NIGHT.</span></h1>
+        <p class="tagline">One road. Endless neon. Take the wheel.</p>
+        <button id="start-button" class="action primary">START ENGINE <span>↗</span></button>
+        <button id="garage-button" class="action secondary">CHANGE VEHICLE FINISH</button>
+        <p id="garage-note" class="micro-note">OBSIDIAN // ACTIVE FINISH</p>
       </div>
-      <p id="garage-note" class="garage-note" aria-live="polite">GARAGE // OBSIDIAN SPEC SELECTED</p>
+      <div class="menu-bottom"><span>NEON HORIZON / BUILD 02</span><span>WEB 3D EXPERIENCE</span></div>
+    </main>
+    <section id="hud" class="hud hidden" aria-live="polite">
+      <div class="metric"><small>SPEED</small><strong><span id="speed-value">000</span><em> KM/H</em></strong></div>
+      <div class="metric distance"><small>DISTANCE</small><strong id="distance-value">00000 <em>M</em></strong><small id="score-value">SCORE 000000</small></div>
+      <button id="pause-button" class="pause-button" aria-label="Pause">Ⅱ</button>
+      <div class="drive-bottom">
+        <div class="nitro-head"><span>NITRO</span><b id="nitro-value">100%</b></div>
+        <div class="nitro-bar"><i id="nitro-fill"></i></div>
+        <small class="desktop-help">W / ↑ ACCELERATE · A D / ← → STEER · SPACE NITRO · S BRAKE</small>
+      </div>
+      <div class="mobile-controls">
+        <button id="brake-button" class="pedal">BRAKE</button>
+        <button id="boost-button" class="pedal boost">NITRO</button>
+      </div>
     </section>
-    <footer class="menu-footer"><span>© 2026 PLIVEX STUDIOS</span><span>DEVELOPED FOR PROS <b>◆</b></span></footer>
-  </main>
-  <section id="hud-overlay" class="hud hidden" aria-live="polite">
-    <div class="hud-top">
-      <div class="hud-card"><small>DISTANCE</small><strong id="distance-value">000000<span>m</span></strong><small id="score-value">SCORE 000000</small></div>
-      <div class="hud-card speed-card"><small>VELOCITY</small><strong><span id="speed-value">000</span><em>KM/H</em></strong><div class="speed-line"><i id="speed-line-fill"></i></div></div>
-    </div>
-    <button id="pause-button" class="pause-button" aria-label="Pause game">Ⅱ</button>
-    <div class="hud-bottom">
-      <div class="nitro-label"><span>NITRO SYSTEM</span><b id="nitro-percent">100%</b></div>
-      <div class="nitro-track"><i id="nitro-fill"></i></div>
-      <p id="control-hint">A / D OR ← / → TO STEER &nbsp; • &nbsp; SPACE TO BOOST</p>
-    </div>
-    <div id="touch-zones" class="touch-zones"><div class="touch-side left">BRAKE</div><div class="touch-side right">HOLD TO BOOST</div></div>
-  </section>
-  <section id="pause-screen" class="screen modal-screen">
-    <div class="modal-panel"><p class="eyebrow">SYSTEM HALTED</p><h2>PAUSED</h2><button id="resume-button" class="neon-button primary">RESUME DRIVE</button><button id="quit-button" class="neon-button secondary">MAIN MENU</button></div>
-  </section>
-  <section id="game-over-screen" class="screen modal-screen">
-    <div class="modal-panel"><p class="eyebrow">RUN COMPLETE</p><h2>GAME OVER</h2><div class="final-score"><small>FINAL DISTANCE</small><strong id="final-distance">000000<span>m</span></strong><small>FINAL SCORE</small><b id="final-score">000000</b></div><button id="play-again-button" class="neon-button primary">PLAY AGAIN <b>↗</b></button><button id="menu-button" class="neon-button secondary">MAIN MENU</button></div>
-  </section>
-  <div id="toast" role="status"></div>
+    <section id="pause-screen" class="screen modal hidden">
+      <div class="panel"><p class="eyebrow">DRIVE SUSPENDED</p><h2>PAUSED</h2><button id="resume-button" class="action primary">RESUME DRIVE</button><button id="quit-button" class="action secondary">MAIN MENU</button></div>
+    </section>
+    <section id="game-over-screen" class="screen modal hidden">
+      <div class="panel"><p class="eyebrow">RUN COMPLETE</p><h2>RUN ENDED</h2><div class="results"><small>DISTANCE</small><strong id="final-distance">0 M</strong><small>SCORE</small><strong id="final-score">0</strong></div><button id="play-again-button" class="action primary">DRIVE AGAIN ↗</button><button id="menu-button" class="action secondary">MAIN MENU</button></div>
+    </section>
+    <div id="loading-screen"><div class="loader-mark">◈</div><h2>NEON <b>HORIZON</b></h2><p>BUILDING THE NIGHT CITY</p><div class="load-track"><i id="load-progress"></i></div><small id="load-label">INITIALIZING GRAPHICS</small></div>
+    <div id="toast" role="status"></div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
