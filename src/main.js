@@ -84,17 +84,25 @@ function makeCar(){
 function buildCity(){
   const towerMat=[0x101724,0x171523,0x101e28,0x1c1a2a].map(c=>material(c,.65,.55));
   const windowMats=[0x18d9f4,0xffb85c,0xff398f,0x24384b].map(c=>new THREE.MeshBasicMaterial({color:c}));
+  const windowGeometry=new THREE.BoxGeometry(.65,.82,.035);
+  const dummy=new THREE.Object3D();
   for(let side of [-1,1]){
     for(let i=0;i<22;i++){
       const h=rand(25,95),w=rand(7,14),d=rand(8,16);
       const g=new THREE.Group();g.position.set(side*rand(16,26),0,-i*28-rand(0,20));
-      const body=addBox(g,w,h,d,choose(towerMat),0,h/2,0);
-      const edge=addBox(g,.1,h,.12,new THREE.MeshBasicMaterial({color:choose([0x19eaff,0xff3e9e,0x8cff70])}),side===-1?w/2+.04:-w/2-.04,h/2,-d/2-.08,false);
-      for(let row=0;row<Math.min(12,Math.floor(h/7));row++){
-        for(let col=0;col<Math.min(5,Math.floor(w/2.4));col++){
-          if(Math.random()<.3)continue;
-          addBox(g,.65,.82,.035,choose(windowMats),(col-(Math.min(5,Math.floor(w/2.4))-1)/2)*1.65,h*.14+row*5.6,-d/2-.08,false);
-        }
+      addBox(g,w,h,d,choose(towerMat),0,h/2,0);
+      addBox(g,.1,h,.12,new THREE.MeshBasicMaterial({color:choose([0x19eaff,0xff3e9e,0x8cff70])}),side===-1?w/2+.04:-w/2-.04,h/2,-d/2-.08,false);
+      const windows=[];
+      const rows=Math.min(12,Math.floor(h/7)),cols=Math.min(5,Math.floor(w/2.4));
+      for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+        if(Math.random()<.3)continue;
+        windows.push([(col-(cols-1)/2)*1.65,h*.14+row*5.6,-d/2-.08]);
+      }
+      if(windows.length){
+        const windowMesh=new THREE.InstancedMesh(windowGeometry,choose(windowMats),windows.length);
+        windowMesh.castShadow=false;windowMesh.receiveShadow=false;
+        windows.forEach((p,index)=>{dummy.position.set(p[0],p[1],p[2]);dummy.updateMatrix();windowMesh.setMatrixAt(index,dummy.matrix);});
+        windowMesh.instanceMatrix.needsUpdate=true;g.add(windowMesh);
       }
       addBox(g,w*.42,.15,d*.4,material(0x293246,.5,.65),0,h+.08,0,false);
       const beacon=new THREE.Mesh(new THREE.SphereGeometry(.13,8,8),new THREE.MeshBasicMaterial({color:0xff315c}));beacon.position.y=h+.28;g.add(beacon);
