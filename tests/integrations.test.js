@@ -10,7 +10,7 @@ test('provider registry contains unique ids and named server secrets',()=>{
 });
 test('providers are never marked configured without all required keys',()=>{
   for(const provider of INTEGRATIONS)assert.equal(integrationStatus(provider.id,{}),provider.setup?'manual_setup':'needs_setup');
-  assert.equal(integrationStatus('github',{GITHUB_TOKEN:'present'}),'configured');
+  assert.equal(integrationStatus('github',{GITHUB_TOKEN_JARVIS:'present',GITHUB_OWNER:'owner',GITHUB_REPO:'repo'}),'configured');
   assert.equal(integrationStatus('cloudflare',{CLOUDFLARE_API_TOKEN:'present'}),'needs_setup');
 });
 test('capability roadmap covers the expected major product areas',()=>{
