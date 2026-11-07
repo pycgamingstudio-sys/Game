@@ -7,7 +7,8 @@ A light-first, responsive personal AI workspace with a pearl, ivory and champagn
 - Supabase Auth (Google OAuth flow), private conversation history and owner-scoped database policies.
 - Projects, personal memories, agent task/approval screens and integration status panel.
 - Private file bucket with per-user storage policies.
-- Gemini chat Edge Function and authenticated agent orchestration endpoint.
+- Gemini chat, private image generation and Tavily research Edge Functions.
+- Authenticated agent planning, approval queue and a Cloudflare Worker gateway for GitHub repository creation and Pages deployment.
 - Feature registry and integration secret checklist.
 - Build and unit-test workflow.
 
