@@ -101,7 +101,6 @@ async function sendMessage() {
   if (saveError) toast('Message could not be saved: '+saveError.message);
   const typing = document.createElement('div'); typing.className='typing-indicator'; typing.innerHTML='<span></span><span></span><span></span>'; $('#messages').append(typing);
   try {
-    if (!CONFIG.chatFunction) throw new Error('AI endpoint is not configured yet. Add the Gemini API key to the secure server function to enable replies.');
     const { data: result, error: invokeError } = await supabase.functions.invoke('jarvis-chat', {
       body:{conversationId:state.activeId,model:state.model,messages:state.messages.slice(-30).map(({role,content})=>({role,content}))}
     });
