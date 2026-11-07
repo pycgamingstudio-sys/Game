@@ -12,7 +12,33 @@ Deno.serve(async(req:Request)=>{
  if(origin&&origin!==allowedOrigin)return json({error:"This private JARVIS X endpoint only accepts the configured local origin."},403);
  const localKey=Deno.env.get("JARVIS_LOCAL_ACCESS_KEY");
  if(!localKey||req.headers.get("x-jarvis-local-key")!==localKey)return json({error:"Private local access key is missing or invalid."},401);
- const body=await req.json(),task=String(body.task||""),p=body.payload&&typeof body.payload==="object"?body.payload:{};
+ let body:any;
+ try { body=await req.json(); } catch { return json({error:"Request body must be valid JSON."},400); }
+ const task=String(body.task||""),p=body.payload&&typeof body.payload==="object"?body.payload:{};
+ if(task==="capabilities"){
+  return json({providers:Object.keys(required).map(id=>({id,configured:configured(id),requiredSecrets:required[id]}))});
+ }
+ if(task==="plan_task"){
+  const goal=String(p.goal||"").trim().slice(0,6000);
+  if(!goal)return json({error:"Tell JARVIS what outcome you want first."},400);
+  const apiKey=Deno.env.get("GEMINI_API_KEY");
+  if(!apiKey)return json({error:"Gemini is not connected yet. Add GEMINI_API_KEY to Supabase Edge Function Secrets."},503);
+  const available=Object.keys(required).filter(configured);
+  const upstream=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+encodeURIComponent(apiKey),{
+   method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    systemInstruction:{parts:[{text:"You are JARVIS X, a careful personal AI project partner. Understand the user's goal. If essential requirements are unclear, DO NOT invent them: return needs_clarification=true and ask 1-3 concise, specific questions in questions. Otherwise return a practical, ordered plan. Never claim execution. Identify which steps require connected providers and explicit approval. Return JSON only: {needs_clarification:boolean,questions:string[],summary:string,steps:[{title:string,description:string,provider:string|null,requiresApproval:boolean}]}. Keep the plan concrete and realistic. Reply in the user's language."}]},
+    contents:[{role:"user",parts:[{text:"User request:\n"+goal+"\nConfigured provider secrets (not proof of permissions): "+available.join(", ")}]}],
+    generationConfig:{temperature:0.25,responseMimeType:"application/json",maxOutputTokens:3500}
+   })
+  });
+  const result=await upstream.json();
+  if(!upstream.ok)return json({error:result.error?.message||"JARVIS planning request failed."},502);
+  const raw=result.candidates?.[0]?.content?.parts?.map((x:any)=>x.text||"").join("")||"";
+  let plan:any;try{plan=JSON.parse(raw);}catch{return json({error:"JARVIS received an invalid planning response. Please try again."},502);}
+  if(typeof plan.needs_clarification!=="boolean"||!Array.isArray(plan.questions)||!Array.isArray(plan.steps)||typeof plan.summary!=="string")return json({error:"The planning response was incomplete."},502);
+  return json({plan,availableProviders:available,executed:false});
+ }
  if(task==="create_github_repository"){
   const token=Deno.env.get("GITHUB_TOKEN");
   if(!token)return json({error:"Add GITHUB_TOKEN to Supabase Edge Function Secrets first."},503);
