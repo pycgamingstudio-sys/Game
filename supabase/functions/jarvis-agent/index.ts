@@ -45,7 +45,7 @@ Deno.serve(async(req:Request)=>{
   if(goal.length<20)return json({error:"Describe the project in at least 20 characters so JARVIS can generate a useful starter."},400);
   const token=Deno.env.get("GITHUB_TOKEN"),apiKey=Deno.env.get("GEMINI_API_KEY");
   if(!token||!apiKey)return json({error:"This action needs both GEMINI_API_KEY and GITHUB_TOKEN server secrets."},503);
-  const generated=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key="+encodeURIComponent(apiKey),{
+  const generated=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key="+encodeURIComponent(apiKey),{
    method:"POST",headers:{"Content-Type":"application/json"},
    body:JSON.stringify({
     systemInstruction:{parts:[{text:"You are a senior software architect. Generate a small but genuinely runnable starter project matching the user's brief. Return JSON only with shape {description:string,files:[{path:string,content:string}]}. Include a useful README and minimal working source/config files. Limit to 8 files and 45000 characters per file. Avoid secrets, credentials, telemetry, hidden network calls, destructive scripts and fake functionality. Do not include package lockfiles. Choose a simple stack appropriate to the request. Do not use placeholder TODOs for core requested behavior."}]},
