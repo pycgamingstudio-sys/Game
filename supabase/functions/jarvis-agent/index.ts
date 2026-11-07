@@ -48,6 +48,20 @@ Deno.serve(async(req:Request)=>{
    }
    return json({approval:data,message:decision==="approved"?"Approved. No external execution was associated with this action.":"Rejected. No action was executed."});
   }
+  if(task==="execute_approved"){
+   const approvalId=String(p.approvalId||"");if(!approvalId)return json({error:"Approval ID is required."},400);
+   const {data:approved,error:approvalError}=await supabase.from("jarvis_approvals").select("*").eq("id",approvalId).eq("user_id",user.id).eq("status","approved").single();
+   if(approvalError||!approved)return json({error:"Approved action not found."},404);
+   if(!["github.create_repository","cloudflare.deploy_pages"].includes(approved.action))return json({error:"No executor is registered for this approved action yet."},400);
+   const gateway=Deno.env.get("JARVIS_GATEWAY_URL");if(!gateway)return json({error:"Add JARVIS_GATEWAY_URL to Supabase Edge Function Secrets before executing."},503);
+   const base=gateway.endsWith("/")?gateway.slice(0,-1):gateway;
+   const route=approved.action==="github.create_repository"?"/api/github/repositories":"/api/deploy/cloudflare";
+   const requestBody=approved.action==="github.create_repository"?{...approved.payload,approvalId}:{approvalId};
+   const response=await fetch(base+route,{method:"POST",headers:{"Authorization":auth,"Content-Type":"application/json"},body:JSON.stringify(requestBody)});
+   const execution=await response.json();
+   await supabase.from("jarvis_audit_logs").insert({user_id:user.id,action:"approval.execution_attempted",target:approvalId,status:response.ok?"success":"failed",details:execution});
+   return json({approval:approved,execution},response.ok?200:502);
+  }
   if(task==="run_agent"){
    const goal=String(p.goal||"").trim().slice(0,4000);if(!goal)return json({error:"Describe what you want the agent to do."},400);
    if(!configured("gemini"))return json({error:"AI planning requires the Gemini API key.",missingProviders:["gemini"]},503);
@@ -55,7 +69,7 @@ Deno.serve(async(req:Request)=>{
    const planResponse=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+encodeURIComponent(Deno.env.get("GEMINI_API_KEY")!),{
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
-     systemInstruction:{parts:[{text:"You are JARVIS X task planner. Convert the user's goal into a practical ordered execution plan. Do not claim to execute actions. Mark steps that need external provider integrations or user approval. Return JSON only with shape {summary:string,steps:[{title:string,description:string,provider:string|null,requiresApproval:boolean,kind:string,parameters:object}]} Include parameters.name and parameters.description for create_repository steps; include parameters.projectName for deploy_pages steps.."}]},
+     systemInstruction:{parts:[{text:"You are JARVIS X task planner. Convert the user's goal into a practical ordered execution plan. Do not claim to execute actions. Mark steps that need external provider integrations or user approval. Return JSON only with shape {summary:string,steps:[{title:string,description:string,provider:string|null,requiresApproval:boolean,kind:string,parameters:object}]} Include parameters.name and parameters.description for create_repository steps; include parameters.projectName for deploy_pages steps."}]},
      contents:[{role:"user",parts:[{text:"Goal: "+goal+"\\nConnected providers: "+available.join(", ")+"\\nAvailable integrations can still require additional OAuth scopes, project access, billing or configuration. Plan safely."}]}],
      generationConfig:{temperature:0.2,responseMimeType:"application/json",maxOutputTokens:3000}
     })
