@@ -10,7 +10,7 @@ Do not paste secrets into the chat, source code, issue comments or frontend envi
 ## Supabase Edge Function Secrets
 Add these under Supabase Dashboard → Edge Functions → Secrets:
 - GEMINI_API_KEY — required for chat and agent planning.
-- SEARCH_API_KEY — selected web-search provider key.
+- TAVILY_API_KEY — Tavily web search key used by the Research workspace.
 - IMAGE_PROVIDER_API_KEY — image provider key if using a separate provider.
 - TTS_API_KEY — speech provider key if using a separate provider.
 - APP_ORIGIN — exact deployed frontend origin for CORS, e.g. https://app.example.com.
