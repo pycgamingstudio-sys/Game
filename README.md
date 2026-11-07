@@ -12,7 +12,7 @@ A local-first, single-owner AI workspace. The app opens directly into the worksp
 1. Copy `.env.example` to `.env.local`.
 2. Fill in the Supabase project URL, publishable key and a long random local access key.
 3. Set the same local access key as the Supabase Edge Function secret `JARVIS_LOCAL_ACCESS_KEY`.
-4. Set `GEMINI_API_KEY` as a Supabase Edge Function secret when ready.
+4. Set `GEMINI_API_KEY` and `GITHUB_TOKEN` as Supabase Edge Function secrets when ready.
 5. Install dependencies with `npm install`, then run `npm run dev`.
 
 The UI opens directly at the local Vite address. No user account is required.
@@ -22,6 +22,7 @@ The UI opens directly at the local Vite address. No user account is required.
 - Browser speech input and read-aloud.
 - Text/CSV/JSON/Markdown attachments plus PDF/image request payload support.
 - Project, Agent Studio, Memory, Activity and Integrations workspace screens.
+- GitHub private repository creation endpoint and Projects screen action (requires a server-side `GITHUB_TOKEN` with repository creation permission).
 - Planned provider adapters: Gemini, GitHub (repositories, branches, commits, pull requests), Cloudflare, web research, image generation and voice.
 - GitHub and Cloudflare actions must be permission-checked and require explicit approval for writes/deployments.
 
