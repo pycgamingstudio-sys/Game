@@ -1,12 +1,28 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const cors={"Access-Control-Allow-Origin":Deno.env.get("APP_ORIGIN")||"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
+const allowedOrigin=Deno.env.get("APP_ORIGIN")||"http://localhost:5173";
+const cors={"Access-Control-Allow-Origin":allowedOrigin,"Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-jarvis-local-key","Access-Control-Allow-Methods":"POST, OPTIONS","Vary":"Origin","Content-Type":"application/json"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
 const required:Record<string,string[]>={gemini:["GEMINI_API_KEY"],github:["GITHUB_TOKEN"],cloudflare:["CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID"],search:["SEARCH_API_KEY"],image:["IMAGE_PROVIDER_API_KEY"],speech:["TTS_API_KEY"],email:["EMAIL_PROVIDER_API_KEY"]};
 const configured=(provider:string)=>(required[provider]||[]).every(key=>Boolean(Deno.env.get(key)));
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
  if(req.method!=="POST")return json({error:"Method not allowed"},405);
+ const origin=req.headers.get("Origin")||"";
+ if(origin&&origin!==allowedOrigin)return json({error:"This private JARVIS X endpoint only accepts the configured local origin."},403);
+ const localKey=Deno.env.get("JARVIS_LOCAL_ACCESS_KEY");
+ if(!localKey||req.headers.get("x-jarvis-local-key")!==localKey)return json({error:"Private local access key is missing or invalid."},401);
+ const body=await req.json(),task=String(body.task||""),p=body.payload&&typeof body.payload==="object"?body.payload:{};
+ if(task==="create_github_repository"){
+  const token=Deno.env.get("GITHUB_TOKEN");
+  if(!token)return json({error:"Add GITHUB_TOKEN to Supabase Edge Function Secrets first."},503);
+  const name=String(p.name||"").trim();
+  if(!/^[A-Za-z0-9_.-]{1,100}$/.test(name))return json({error:"Repository name must use 1–100 letters, numbers, dots, underscores or hyphens."},400);
+  const upstream=await fetch("https://api.github.com/user/repos",{method:"POST",headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"},body:JSON.stringify({name,description:String(p.description||"").slice(0,350),private:p.private!==false,auto_init:true})});
+  const result=await upstream.json();
+  if(!upstream.ok)return json({error:result.message||"GitHub repository creation failed."},upstream.status);
+  return json({repository:{name:result.name,full_name:result.full_name,private:result.private,url:result.html_url,clone_url:result.clone_url,default_branch:result.default_branch},message:"GitHub repository created successfully."});
+ }
  const auth=req.headers.get("Authorization")||"";if(!auth.startsWith("Bearer "))return json({error:"Sign in required"},401);
  const key=Deno.env.get("SUPABASE_ANON_KEY")||Deno.env.get("SUPABASE_PUBLISHABLE_KEY")||"";
  if(!key)return json({error:"Supabase publishable key is missing from function environment."},503);
