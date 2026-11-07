@@ -102,9 +102,10 @@ async function openConversation(id) {
   renderMessages(); closeSidebar();
 }
 async function uploadAttachments() {
-  const uploaded=[];
+  const uploaded=[];let totalBytes=0;
   for (const file of state.files) {
-    if (file.size > 20*1024*1024) throw new Error(file.name+' exceeds the 20 MB AI-analysis limit.');
+    totalBytes+=file.size;
+    if (file.size > 15*1024*1024 || totalBytes > 15*1024*1024) throw new Error('Keep each message’s attachments under 15 MB total.');
     const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
     const storagePath=`${state.user.id}/${crypto.randomUUID()}-${safeName}`;
     const {error:uploadError}=await supabase.storage.from('jarvis-private').upload(storagePath,file,{contentType:file.type||'application/octet-stream',upsert:false});
