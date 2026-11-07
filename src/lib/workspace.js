@@ -6,7 +6,7 @@ const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 export function initializeWorkspace({supabase,getUser,toast,onChat}) {
   const area=$('#messages');
   let lastPlan=null;
-  const labels={chat:'Chats',search:'Search chats',projects:'Projects',tools:'Agent studio',research:'Research',images:'Image studio',memory:'Memory',activity:'Activity',integrations:'Integrations',settings:'Settings'};
+  const labels={chat:'Chats',search:'Search chats',projects:'Projects',tools:'Agent studio',research:'Research',images:'Image studio',files:'Files',memory:'Memory',activity:'Activity',integrations:'Integrations',settings:'Settings'};
   async function refresh(){return await loadWorkspace(supabase);}
   function activate(view){
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b.dataset.view===view));
@@ -17,6 +17,7 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
     if(view==='search')return renderSearch();
     if(view==='research')return renderResearch();
     if(view==='images')return renderImageStudio();
+    if(view==='files')return renderFiles();
     if(view==='settings')return renderSettings();
     render(view);
   }
@@ -44,7 +45,15 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
       const query=$('#chat-search-query').value.trim();if(query.length<2)return toast('Enter at least two characters.');
       const button=$('#run-chat-search');button.disabled=true;button.textContent='Searching…';
       try{
-        const {data,error}=await supabase.from('jarvis_messages').select('id,conversation_id,content,created_at').ilike('content','%'+query.replace(/[%_]/g,'\\  async function renderSettings(){')+'%').order('created_at',{ascending:false}).limit(30);
+        const {data,error}=await supabase.from('jarvis_messages').select('id,conversation_id,content,created_at').ilike('content','%'+query.replace(/[%_]/g,'\\  async function renderFiles(){
+    const user=getUser();
+    const {data,error}=await supabase.from('jarvis_files').select('*').eq('user_id',user.id).order('created_at',{ascending:false}).limit(100);
+    if(error){toast(error.message);return;}
+    area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">PRIVATE STORAGE</p><h2>Files</h2><p>Your uploaded documents and generated images, stored privately.</p></div></div><div class="workspace-list">${(data||[]).map(file=>`<article class="list-card"><div class="file-info"><span class="file-symbol">▧</span><div><b>${esc(file.file_name)}</b><small>${esc(file.mime_type||'File')} · ${Math.round((file.size_bytes||0)/1024)} KB · ${new Date(file.created_at).toLocaleDateString()}</small></div></div><div class="file-actions"><button class="text-button" data-open-file="${file.id}">Open</button><button class="text-button" data-delete-file="${file.id}" data-path="${esc(file.storage_path||'')}">Delete</button></div></article>`).join('')||'<div class="empty-card">No files yet. Upload a document in chat or generate an image.</div>'}</div></div>`;
+    area.querySelectorAll('[data-open-file]').forEach(button=>button.onclick=async()=>{const file=data.find(item=>item.id===button.dataset.openFile);if(!file?.storage_path)return;const {data:signed,error:signedError}=await supabase.storage.from('jarvis-private').createSignedUrl(file.storage_path,3600);if(signedError)return toast(signedError.message);window.open(signed.signedUrl,'_blank','noopener');});
+    area.querySelectorAll('[data-delete-file]').forEach(button=>button.onclick=async()=>{const file=data.find(item=>item.id===button.dataset.deleteFile);if(!file)return;const {error:storageError}=await supabase.storage.from('jarvis-private').remove([file.storage_path]);if(storageError)return toast(storageError.message);const {error:rowError}=await supabase.from('jarvis_files').delete().eq('id',file.id);if(rowError)return toast(rowError.message);toast('File deleted');renderFiles();});
+  }
+  async function renderSettings(){')+'%').order('created_at',{ascending:false}).limit(30);
         if(error)throw error;
         $('#chat-search-results').innerHTML=(data||[]).map(item=>`<button class="search-result" data-conversation="${item.conversation_id}"><b>${esc(item.content.slice(0,180))}</b><small>${new Date(item.created_at).toLocaleString()}</small></button>`).join('')||'<div class="empty-card">No matching messages found.</div>';
         $('#chat-search-results').querySelectorAll('[data-conversation]').forEach(b=>b.onclick=()=>{window.dispatchEvent(new CustomEvent('jarvis:navigate',{detail:'chat'}));window.dispatchEvent(new CustomEvent('jarvis:open-conversation',{detail:b.dataset.conversation}));});
