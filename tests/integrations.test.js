@@ -6,10 +6,10 @@ import { FEATURE_FLAGS, PROVIDER_REQUIRED_FLAGS } from '../src/lib/feature-flags
 test('provider registry contains unique ids and named server secrets',()=>{
   const ids=INTEGRATIONS.map(x=>x.id);
   assert.equal(new Set(ids).size,ids.length);
-  for(const provider of INTEGRATIONS){assert.ok(provider.name);assert.ok(provider.secrets.length);assert.ok(provider.capabilities.length);}
+  for(const provider of INTEGRATIONS){assert.ok(provider.name);assert.ok(provider.setup || provider.secrets.length);assert.ok(provider.capabilities.length);}
 });
 test('providers are never marked configured without all required keys',()=>{
-  for(const provider of INTEGRATIONS)assert.equal(integrationStatus(provider.id,{}),'needs_setup');
+  for(const provider of INTEGRATIONS)assert.equal(integrationStatus(provider.id,{}),provider.setup?'manual_setup':'needs_setup');
   assert.equal(integrationStatus('github',{GITHUB_TOKEN:'present'}),'configured');
   assert.equal(integrationStatus('cloudflare',{CLOUDFLARE_API_TOKEN:'present'}),'needs_setup');
 });
