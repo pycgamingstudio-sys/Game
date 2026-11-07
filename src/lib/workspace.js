@@ -4,7 +4,8 @@ import { invokeAgent, loadWorkspace } from './agent-client.js';
 const $ = (s) => document.querySelector(s);
 const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function initializeWorkspace({supabase,getUser,toast,onChat}) {
-  const area=$('#messages');\n  let lastPlan=null;
+  const area=$('#messages');
+  let lastPlan=null;
   const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',memory:'Memory',activity:'Activity',integrations:'Integrations'};
   async function refresh(){return await loadWorkspace(supabase);}
   function activate(view){
