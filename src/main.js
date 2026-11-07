@@ -65,6 +65,7 @@ function renderMessages() {
       <div class="message-avatar">${message.role === 'user' ? escapeHtml(initials(state.user)) : '✳'}</div>
       <div class="message-body"><div class="message-author">${message.role === 'user' ? 'You' : 'Jarvis X'}</div>
       <div class="message-content">${escapeHtml(message.content).replace(/\n/g,'<br>')}</div>
+      ${message.attachments?.length ? `<div class="message-attachments">${message.attachments.map(file=>`<span>▧ ${escapeHtml(file.fileName||file.name||'Attachment')}</span>`).join('')}</div>` : ''}
       ${message.role === 'assistant' ? '<div class="message-tools"><button class="copy-message" title="Copy response">Copy</button><button class="speak-message" title="Read response aloud">Read aloud</button></div>' : ''}</div>
     </article>`).join('');
   area.querySelectorAll('.copy-message').forEach((button,index) => button.addEventListener('click', () => {
@@ -158,7 +159,7 @@ function setupUI() {
   $('#file-input').addEventListener('change',e=>{
     const files=[...e.target.files]; if(!files.length)return;
     state.files=files; $('#attachment-note').textContent=files.map(f=>f.name).join(' · '); $('#attachment-note').hidden=false;
-    toast('File selected. Secure upload and document analysis will be enabled in the next integration step.');
+    toast('File selected. It will upload privately when you send the message.');
   });
   $('#voice-button').addEventListener('click',()=>{
     const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
