@@ -1,36 +1,25 @@
-# NEON HORIZON
+# JARVIS X
 
-A browser-based 3D night-drive prototype built with Three.js, Vite and cannon-es.
+A responsive, light-first personal AI workspace.
 
-## Requirements
-- Node.js 22 or newer
-- npm
+## Visual direction
+Pearl, ivory, warm beige and champagne-gold. No dark/neon default theme.
 
-## Local development
-```bash
-npm install
-npm run dev
-```
+## Stack
+- Vite frontend
+- Supabase Auth + Postgres (RLS)
+- Supabase Edge Function for server-side Gemini calls
 
-## Production build
-```bash
-npm run build
-npm run preview
-```
+## Local setup
+1. Copy `.env.example` to `.env` and fill the Supabase URL and publishable key.
+2. `npm install`
+3. `npm run dev`
 
-The production site is generated in dist/.
+## Supabase setup
+- Apply migration `supabase/migrations/202611070001_jarvis_x_core_schema.sql`.
+- Enable Google provider in Supabase Auth and add the app redirect URLs.
+- Deploy `supabase/functions/jarvis-chat`.
+- Set Edge Function secret `GEMINI_API_KEY`; optionally set `APP_ORIGIN`.
 
-## Deployment
-- Vercel: Framework preset Vite, build command `npm run build`, output directory `dist`.
-- Netlify: build command `npm run build`, publish directory `dist`.
-
-## Controls
-- A / D or Left / Right: steer
-- W / Up: accelerate
-- S / Down: brake
-- Space / Shift: nitro
-- Escape: pause
-- Touch: drag left/right to steer; on-screen pedals on touch devices
-
-## Notes
-The vehicle simulation uses a rigid chassis and raycast suspension. It is not a soft-body deformation simulator and does not claim BeamNG.drive parity. Third-party model and texture assets should only be added after their licenses are checked.
+## Safety
+Only the user's own records are accessible through RLS. Provider secrets remain server-side. High-impact agent actions must use explicit approval flows before execution.
