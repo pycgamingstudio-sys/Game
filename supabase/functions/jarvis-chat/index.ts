@@ -85,7 +85,25 @@ Deno.serve(async (req: Request) => {
     const result = await upstream.json();
     if (!upstream.ok) return reply({ error: result.error?.message || "AI provider request failed" }, upstream.status);
     const text = result.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "";
-    return reply({ reply: text });
+    let memoriesSaved=0;
+    const latestUser=[...messages].reverse().find((message:any)=>message.role==="user");
+    if(preferences?.settings?.memory_enabled===true && latestUser?.content){
+      try{
+        const memoryResponse=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},body:JSON.stringify({systemInstruction:{parts:[{text:"Extract only explicit, useful long-term preferences, project context or recurring workflow facts the user directly stated. Never infer. Never save sensitive personal data, health details, passwords, API keys, financial account data, government IDs, religion, politics, sexuality or other highly sensitive information. Return JSON only as an array of at most 3 objects with keys content and category. Categories: preference, project, workflow, general. If nothing qualifies, return []."}]},contents:[{role:"user",parts:[{text:latestUser.content.slice(0,6000)}]}],generationConfig:{responseMimeType:"application/json",maxOutputTokens:1200}})});
+        const memoryResult=await memoryResponse.json();
+        if(memoryResponse.ok){
+          const memoryText=memoryResult.candidates?.[0]?.content?.parts?.map((part:any)=>part.text||"").join("")||"[]";
+          const extracted=JSON.parse(memoryText);
+          if(Array.isArray(extracted)){
+            const {data:existing}=await supabase.from("jarvis_memories").select("content").eq("user_id",user.id).order("created_at",{ascending:false}).limit(60);
+            const known=new Set((existing||[]).map((item:any)=>String(item.content).toLowerCase()));
+            const inserts=extracted.slice(0,3).filter((item:any)=>typeof item.content==="string"&&item.content.trim().length>0&&item.content.length<=500&&!known.has(item.content.trim().toLowerCase())).map((item:any)=>({user_id:user.id,content:item.content.trim(),category:["preference","project","workflow","general"].includes(item.category)?item.category:"general",source:"auto"}));
+            if(inserts.length){const {error:memoryError}=await supabase.from("jarvis_memories").insert(inserts);if(!memoryError)memoriesSaved=inserts.length;}
+          }
+        }
+      }catch{/* Memory extraction is optional and must never block the chat reply. */}
+    }
+    return reply({ reply: text, memoriesSaved });
   } catch (error) {
     return reply({ error: error instanceof Error ? error.message : "Unexpected server error" }, 500);
   }
