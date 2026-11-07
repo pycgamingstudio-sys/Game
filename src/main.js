@@ -90,42 +90,56 @@ async function loadConversations() {
 }
 async function newConversation() {
   const { data, error } = await supabase.from('jarvis_conversations').insert({user_id:state.user.id,title:'New chat',model:state.model}).select().single();
-  if (error) return toast(error.message);
-  state.conversations.unshift(data); state.activeId = data.id; state.messages = []; renderConversations(); renderMessages(); $('#composer-input').focus(); closeSidebar();
+  if (error) { toast(error.message); return false; }
+  state.conversations.unshift(data); state.activeId = data.id; state.messages = []; renderConversations(); renderMessages(); $('#composer-input').focus(); closeSidebar(); return true;
 }
 async function openConversation(id) {
   state.activeId = id; renderConversations();
   const { data, error } = await supabase.from('jarvis_messages').select('*').eq('conversation_id',id).order('created_at',{ascending:true});
   if (error) return toast(error.message);
-  state.messages = (data || []).map(m => ({role:m.role,content:m.content,id:m.id}));
+  state.messages = (data || []).map(m => ({role:m.role,content:m.content,id:m.id,attachments:m.attachments||[]}));
   renderMessages(); closeSidebar();
 }
+async function uploadAttachments() {
+  const uploaded=[];
+  for (const file of state.files) {
+    if (file.size > 20*1024*1024) throw new Error(file.name+' exceeds the 20 MB AI-analysis limit.');
+    const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const storagePath=\`\${state.user.id}/\${crypto.randomUUID()}-\${safeName}\`;
+    const {error:uploadError}=await supabase.storage.from('jarvis-private').upload(storagePath,file,{contentType:file.type||'application/octet-stream',upsert:false});
+    if(uploadError)throw uploadError;
+    const {data,error}=await supabase.from('jarvis_files').insert({user_id:state.user.id,conversation_id:state.activeId,file_name:file.name,mime_type:file.type,size_bytes:file.size,storage_path:storagePath}).select().single();
+    if(error)throw error;
+    uploaded.push({id:data.id,fileName:file.name,mimeType:file.type,storagePath,size:file.size});
+  }
+  state.files=[];$('#file-input').value='';$('#attachment-note').hidden=true;$('#attachment-note').textContent='';
+  return uploaded;
+}
 async function sendMessage() {
-  const input = $('#composer-input'); const content = input.value.trim();
-  if (!content || state.busy) return;
-  if (!state.activeId) await newConversation();
-  state.busy = true; $('#send-button').disabled = true; input.value=''; resizeComposer();
-  state.messages.push({role:'user',content}); renderMessages();
-  const { error: saveError } = await supabase.from('jarvis_messages').insert({conversation_id:state.activeId,user_id:state.user.id,role:'user',content});
-  if (saveError) toast('Message could not be saved: '+saveError.message);
-  const typing = document.createElement('div'); typing.className='typing-indicator'; typing.innerHTML='<span></span><span></span><span></span>'; $('#messages').append(typing);
-  try {
-    const { data: result, error: invokeError } = await supabase.functions.invoke('jarvis-chat', {
-      body:{conversationId:state.activeId,model:state.model,messages:state.messages.slice(-30).map(({role,content})=>({role,content}))}
-    });
-    if (invokeError) throw new Error(invokeError.message || 'The assistant could not respond.');
-    if (result?.error) throw new Error(result.error);
-    const answer = result?.reply || 'I could not generate a response.';
-    state.messages.push({role:'assistant',content:answer}); typing.remove(); renderMessages();
+  const input=$('#composer-input'),typed=input.value.trim();
+  if((!typed&&!state.files.length)||state.busy)return;
+  if(!state.activeId&&!await newConversation())return;
+  state.busy=true;$('#send-button').disabled=true;input.value='';resizeComposer();
+  let attachments=[];
+  try{attachments=await uploadAttachments();}
+  catch(error){toast('File upload failed: '+error.message);state.busy=false;$('#send-button').disabled=false;return;}
+  const content=typed||'Please analyse the attached file(s).';
+  state.messages.push({role:'user',content,attachments});renderMessages();
+  const {error:saveError}=await supabase.from('jarvis_messages').insert({conversation_id:state.activeId,user_id:state.user.id,role:'user',content,attachments});
+  if(saveError)toast('Message could not be saved: '+saveError.message);
+  const typing=document.createElement('div');typing.className='typing-indicator';typing.innerHTML='<span></span><span></span><span></span>';$('#messages').append(typing);
+  try{
+    const {data:result,error:invokeError}=await supabase.functions.invoke('jarvis-chat',{body:{conversationId:state.activeId,model:state.model,messages:state.messages.slice(-30).map(({role,content,attachments})=>({role,content,attachments:attachments||[]}))}});
+    if(invokeError)throw new Error(invokeError.message||'The assistant could not respond.');
+    if(result?.error)throw new Error(result.error);
+    const answer=result?.reply||'I could not generate a response.';
+    state.messages.push({role:'assistant',content:answer});typing.remove();renderMessages();
     await supabase.from('jarvis_messages').insert({conversation_id:state.activeId,user_id:state.user.id,role:'assistant',content:answer,model:state.model});
-    const current = state.conversations.find(c=>c.id===state.activeId);
-    if (current?.title === 'New chat') {
-      current.title = content.slice(0,48); await supabase.from('jarvis_conversations').update({title:current.title,updated_at:new Date().toISOString()}).eq('id',state.activeId);
-      renderConversations();
-    } else await supabase.from('jarvis_conversations').update({updated_at:new Date().toISOString()}).eq('id',state.activeId);
-  } catch(error) {
-    typing.remove(); state.messages.push({role:'assistant',content:`I’m ready, but the AI connection needs setup. ${error.message}`}); renderMessages();
-  } finally { state.busy=false; $('#send-button').disabled=false; input.focus(); }
+    const current=state.conversations.find(c=>c.id===state.activeId);
+    if(current?.title==='New chat'){current.title=content.slice(0,48);await supabase.from('jarvis_conversations').update({title:current.title,updated_at:new Date().toISOString()}).eq('id',state.activeId);renderConversations();}
+    else await supabase.from('jarvis_conversations').update({updated_at:new Date().toISOString()}).eq('id',state.activeId);
+  }catch(error){typing.remove();state.messages.push({role:'assistant',content:\`I’m ready, but the AI connection needs setup. \${error.message}\`});renderMessages();}
+  finally{state.busy=false;$('#send-button').disabled=false;input.focus();}
 }
 function resizeComposer() {
   const input=$('#composer-input'); input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,180)+'px';
