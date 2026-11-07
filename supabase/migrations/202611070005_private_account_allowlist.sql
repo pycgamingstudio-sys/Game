@@ -1,10 +1,12 @@
 create table if not exists public.jarvis_allowed_users (email text primary key, enabled boolean not null default true, created_at timestamptz not null default now());
 alter table public.jarvis_allowed_users enable row level security;
 revoke all on table public.jarvis_allowed_users from anon, authenticated;
-create or replace function public.is_jarvis_allowed_user() returns boolean language sql stable security definer set search_path = '' as $$
+create policy "jarvis allowed users self read" on public.jarvis_allowed_users for select to authenticated using (lower(email)=lower(coalesce(auth.jwt()->>'email','')));
+grant select on public.jarvis_allowed_users to authenticated;
+create or replace function public.is_jarvis_allowed_user() returns boolean language sql stable security invoker set search_path = '' as $
   select exists(select 1 from public.jarvis_allowed_users allowed where lower(allowed.email)=lower(coalesce(auth.jwt()->>'email','')) and allowed.enabled=true);
 $$;
-revoke all on function public.is_jarvis_allowed_user() from public;
+revoke all on function public.is_jarvis_allowed_user() from public, anon;
 grant execute on function public.is_jarvis_allowed_user() to authenticated;
 
 drop policy if exists "jarvis conversations own" on public.jarvis_conversations;
