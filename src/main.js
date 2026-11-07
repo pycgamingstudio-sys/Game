@@ -153,7 +153,7 @@ function setupUI() {
     if(error)toast(error.message);
   });
   $('#theme-note').textContent='Pearl · Champagne · Ivory';
-  initializeWorkspace({supabase,getUser:()=>state.user,toast});
+  initializeWorkspace({supabase,getUser:()=>state.user,toast,onChat:renderMessages});
 }
 async function start() {
   setupUI();
