@@ -1,2 +1,5 @@
 [functions.jarvis-chat]
 verify_jwt = false
+
+[functions.jarvis-agent]
+verify_jwt = false
