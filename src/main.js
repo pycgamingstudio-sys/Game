@@ -65,10 +65,19 @@ function renderMessages() {
       <div class="message-avatar">${message.role === 'user' ? escapeHtml(initials(state.user)) : '✳'}</div>
       <div class="message-body"><div class="message-author">${message.role === 'user' ? 'You' : 'Jarvis X'}</div>
       <div class="message-content">${escapeHtml(message.content).replace(/\n/g,'<br>')}</div>
-      ${message.role === 'assistant' ? '<div class="message-tools"><button class="copy-message" title="Copy response">Copy</button></div>' : ''}</div>
+      ${message.role === 'assistant' ? '<div class="message-tools"><button class="copy-message" title="Copy response">Copy</button><button class="speak-message" title="Read response aloud">Read aloud</button></div>' : ''}</div>
     </article>`).join('');
   area.querySelectorAll('.copy-message').forEach((button,index) => button.addEventListener('click', () => {
     const msg = state.messages.filter(m => m.role === 'assistant')[index]; navigator.clipboard?.writeText(msg?.content || ''); toast('Copied to clipboard');
+  }));
+  area.querySelectorAll('.speak-message').forEach((button,index) => button.addEventListener('click', () => {
+    const msg = state.messages.filter(m => m.role === 'assistant')[index];
+    if (!('speechSynthesis' in window)) return toast('Read aloud is not supported in this browser.');
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(msg?.content || '');
+    utterance.lang = navigator.language || 'hi-IN';
+    utterance.rate = 1;
+    window.speechSynthesis.speak(utterance);
   }));
   area.scrollTop = area.scrollHeight;
 }
@@ -140,7 +149,7 @@ function setupUI() {
   $('#voice-button').addEventListener('click',()=>{
     const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SpeechRecognition)return toast('Voice input is not supported in this browser.');
-    const recognition=new SpeechRecognition(); recognition.lang='en-IN'; recognition.interimResults=false;
+    const recognition=new SpeechRecognition(); recognition.lang=navigator.language || 'hi-IN'; recognition.interimResults=false;
     recognition.onresult=e=>{ $('#composer-input').value += ( $('#composer-input').value ? ' ' : '')+e.results[0][0].transcript; resizeComposer(); };
     recognition.onerror=()=>toast('Voice input could not start.'); recognition.start();
   });
