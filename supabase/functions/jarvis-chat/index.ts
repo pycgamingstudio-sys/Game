@@ -66,7 +66,10 @@ Deno.serve(async (req: Request) => {
       const parts: any[] = [{ text: message.content.slice(0, 20000) }];
       if (message.role === "user" && Array.isArray(message.attachments)) {
         for (const attachment of message.attachments.slice(0, 4)) {
-          const prepared=await attachmentPart(supabase,user.id,attachment);\n          attachmentBytesTotal+=prepared.size;\n          if(attachmentBytesTotal>15*1024*1024)throw new Error('The total attachment size for this conversation request exceeds 15 MB.');\n          parts.push(prepared.part);
+          const prepared=await attachmentPart(supabase,user.id,attachment);
+          attachmentBytesTotal+=prepared.size;
+          if(attachmentBytesTotal>15*1024*1024)throw new Error('The total attachment size for this conversation request exceeds 15 MB.');
+          parts.push(prepared.part);
         }
       }
       contents.push({ role: message.role === "assistant" ? "model" : "user", parts });
