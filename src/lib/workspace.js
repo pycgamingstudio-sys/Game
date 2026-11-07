@@ -63,16 +63,6 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
     area.querySelectorAll('[data-open-file]').forEach(button=>button.onclick=async()=>{const file=data.find(item=>item.id===button.dataset.openFile);if(!file?.storage_path)return;const {data:signed,error:signedError}=await supabase.storage.from('jarvis-private').createSignedUrl(file.storage_path,3600);if(signedError)return toast(signedError.message);window.open(signed.signedUrl,'_blank','noopener');});
     area.querySelectorAll('[data-delete-file]').forEach(button=>button.onclick=async()=>{const file=data.find(item=>item.id===button.dataset.deleteFile);if(!file)return;const {error:storageError}=await supabase.storage.from('jarvis-private').remove([file.storage_path]);if(storageError)return toast(storageError.message);const {error:rowError}=await supabase.from('jarvis_files').delete().eq('id',file.id);if(rowError)return toast(rowError.message);toast('File deleted');renderFiles();});
   }
-  async function renderSettings(){')+'%').order('created_at',{ascending:false}).limit(30);
-        if(error)throw error;
-        $('#chat-search-results').innerHTML=(data||[]).map(item=>`<button class="search-result" data-conversation="${item.conversation_id}"><b>${esc(item.content.slice(0,180))}</b><small>${new Date(item.created_at).toLocaleString()}</small></button>`).join('')||'<div class="empty-card">No matching messages found.</div>';
-        $('#chat-search-results').querySelectorAll('[data-conversation]').forEach(b=>b.onclick=()=>{window.dispatchEvent(new CustomEvent('jarvis:navigate',{detail:'chat'}));window.dispatchEvent(new CustomEvent('jarvis:open-conversation',{detail:b.dataset.conversation}));});
-      }catch(e){toast(e.message);}
-      finally{button.disabled=false;button.textContent='Search history ↗';}
-    };
-    $('#run-chat-search').onclick=run;
-    $('#chat-search-query').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
-  }
   async function renderSettings(){
     const user=getUser();let prefs=null;
     const {data,error}=await supabase.from('jarvis_preferences').select('*').eq('user_id',user.id).maybeSingle();
