@@ -105,7 +105,7 @@ async function uploadAttachments() {
   for (const file of state.files) {
     if (file.size > 20*1024*1024) throw new Error(file.name+' exceeds the 20 MB AI-analysis limit.');
     const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const storagePath=\`\${state.user.id}/\${crypto.randomUUID()}-\${safeName}\`;
+    const storagePath=`${state.user.id}/${crypto.randomUUID()}-${safeName}`;
     const {error:uploadError}=await supabase.storage.from('jarvis-private').upload(storagePath,file,{contentType:file.type||'application/octet-stream',upsert:false});
     if(uploadError)throw uploadError;
     const {data,error}=await supabase.from('jarvis_files').insert({user_id:state.user.id,conversation_id:state.activeId,file_name:file.name,mime_type:file.type,size_bytes:file.size,storage_path:storagePath}).select().single();
@@ -138,7 +138,7 @@ async function sendMessage() {
     const current=state.conversations.find(c=>c.id===state.activeId);
     if(current?.title==='New chat'){current.title=content.slice(0,48);await supabase.from('jarvis_conversations').update({title:current.title,updated_at:new Date().toISOString()}).eq('id',state.activeId);renderConversations();}
     else await supabase.from('jarvis_conversations').update({updated_at:new Date().toISOString()}).eq('id',state.activeId);
-  }catch(error){typing.remove();state.messages.push({role:'assistant',content:\`I’m ready, but the AI connection needs setup. \${error.message}\`});renderMessages();}
+  }catch(error){typing.remove();state.messages.push({role:'assistant',content:`I’m ready, but the AI connection needs setup. ${error.message}`});renderMessages();}
   finally{state.busy=false;$('#send-button').disabled=false;input.focus();}
 }
 function resizeComposer() {
