@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
     const {data:preferences}=await supabase.from("jarvis_preferences").select("preferred_language,custom_instructions").eq("user_id",user.id).maybeSingle();
     const languageInstruction=preferences?.preferred_language==="hi"?" Reply in Hindi.":preferences?.preferred_language==="en"?" Reply in English.":preferences?.preferred_language==="hinglish"?" Reply naturally in Hinglish (Hindi mixed with English).":" Reply in the user's language.";
     const customInstructions=String(preferences?.custom_instructions||"").slice(0,3000);
-    const systemText="You are JARVIS X, a capable, warm, accurate personal AI assistant. Be honest about limitations and never claim to have performed actions you did not perform."+languageInstruction+(customInstructions?"\\n\\nUser's personal instructions (follow unless unsafe or conflicting with higher-priority rules):\\n"+customInstructions:"");
+    const systemText="You are JARVIS X, a capable, warm, accurate personal AI assistant. Be honest about limitations and never claim to have performed actions you did not perform."+languageInstruction+(customInstructions?"\n\nUser's personal instructions (follow unless unsafe or conflicting with higher-priority rules):\n"+customInstructions:"");
     const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemText }] }, generationConfig: { maxOutputTokens: 4096 } })
