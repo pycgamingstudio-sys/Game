@@ -29,7 +29,6 @@ Deno.serve(async(req:Request)=>{
  const supabase=createClient(Deno.env.get("SUPABASE_URL")!,key,{global:{headers:{Authorization:auth}}});
  const {data:{user},error:authError}=await supabase.auth.getUser();if(authError||!user)return json({error:"Invalid session"},401);
  try{
-  const body=await req.json(),task=String(body.task||""),p=body.payload&&typeof body.payload==="object"?body.payload:{};
   if(task==="capabilities")return json({providers:Object.keys(required).map(id=>({id,configured:configured(id),requiredSecrets:required[id]}))});
   if(task==="create_project"){
    const name=String(p.name||"").trim().slice(0,100);if(!name)return json({error:"Project name is required."},400);
