@@ -6,7 +6,7 @@ const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 export function initializeWorkspace({supabase,getUser,toast,onChat}) {
   const area=$('#messages');
   let lastPlan=null;
-  const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',memory:'Memory',activity:'Activity',integrations:'Integrations'};
+  const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',research:'Research',memory:'Memory',activity:'Activity',integrations:'Integrations'};
   async function refresh(){return await loadWorkspace(supabase);}
   function activate(view){
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b.dataset.view===view));
@@ -14,6 +14,7 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
     $('#sidebar').classList.remove('open');$('#sidebar-backdrop').classList.remove('visible');
     if(view==='chat'){onChat?.();return;}
     if(view==='integrations')return renderIntegrations();
+    if(view==='research')return renderResearch();
     render(view);
   }
   async function render(view){
@@ -33,6 +34,25 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
       area.querySelectorAll('[data-decision]').forEach(b=>b.onclick=async()=>{try{const result=await invokeAgent(supabase,'decide_approval',{approvalId:b.dataset.id,decision:b.dataset.decision});const url=result.execution?.repository?.url||result.execution?.deploymentUrl;toast(url?`Ready: ${url}`:(result.message||'Approval updated.'));render(view);}catch(e){toast(e.message);}});
       area.querySelectorAll('[data-execute]').forEach(b=>b.onclick=async()=>{try{const result=await invokeAgent(supabase,'execute_approved',{approvalId:b.dataset.execute});const url=result.execution?.repository?.url||result.execution?.deploymentUrl;toast(url?`Ready: ${url}`:(result.execution?.message||'Execution submitted.'));render(view);}catch(e){toast(e.message);}});
     }
+  }
+  async function renderResearch(){
+    area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">LIVE WEB KNOWLEDGE</p><h2>Research</h2><p>Search the web, compare sources and get a cited summary.</p></div></div><div class="research-launch"><textarea id="research-query" rows="3" placeholder="What would you like me to research?"></textarea><button class="gold-button" id="run-research">Research with sources ↗</button></div><div id="research-result"></div></div>`;
+    $('#run-research').onclick=async()=>{
+      const query=$('#research-query').value.trim();if(!query)return toast('Enter a research question.');
+      const button=$('#run-research');button.disabled=true;button.textContent='Researching…';
+      try{
+        const {data,error}=await supabase.functions.invoke('jarvis-research',{body:{query}});
+        if(error)throw new Error(error.message||'Research request failed.');
+        if(data?.error)throw new Error(data.error);
+        const result=$('#research-result');
+        const sources=(data.sources||[]).map(source=>{
+          const url=/^https?:\/\//i.test(source.url)?source.url:'#';
+          return `<a class="source-card" href="${esc(url)}" target="_blank" rel="noreferrer"><span>[${source.number}]</span><div><b>${esc(source.title)}</b><small>${esc(source.url)}</small></div><span>↗</span></a>`;
+        }).join('');
+        result.innerHTML=`<article class="research-answer"><div class="section-title">RESEARCH SUMMARY</div><div class="research-copy">${esc(data.summary||'No summary returned.').replace(/\n/g,'<br>')}</div></article><div class="section-title">SOURCES (${(data.sources||[]).length})</div><div class="source-list">${sources||'<div class="empty-card">No sources returned.</div>'}</div>`;
+      }catch(e){toast(e.message);}
+      finally{button.disabled=false;button.textContent='Research with sources ↗';}
+    };
   }
   async function renderIntegrations(){
     let providers=[];try{const result=await invokeAgent(supabase,'capabilities');providers=result.providers||[];}catch(e){toast(e.message);}
