@@ -39,18 +39,23 @@ export default {
    if(url.pathname==="/api/github/repositories"&&request.method==="POST"){
     const body=await request.json();const name=String(body.name||"").trim().toLowerCase().replace(/[^a-z0-9._-]/g,"-").slice(0,80);
     if(!name)return json({error:"Repository name is required."},400,headers);
-    await approval(env,auth,body.approvalId,"github.create_repository");
+    const approved=await approval(env,auth,body.approvalId,"github.create_repository");
+    const approvedPayload=approved.payload||{};
+    const approvedName=String(approvedPayload.name||"").trim().toLowerCase().replace(/[^a-z0-9._-]/g,"-").slice(0,80);
+    if(!approvedName)return json({error:"The approved request does not include a repository name."},400,headers);
     if(!env.GITHUB_TOKEN)return json({error:"GitHub token is not configured."},503,headers);
-    const response=await fetch("https://api.github.com/user/repos",{method:"POST",headers:{authorization:"Bearer "+env.GITHUB_TOKEN,accept:"application/vnd.github+json","content-type":"application/json","x-github-api-version":"2022-11-28","user-agent":"JARVIS-X"},body:JSON.stringify({name,description:String(body.description||"Created by JARVIS X").slice(0,300),private:body.private!==false,auto_init:true})});
+    const response=await fetch("https://api.github.com/user/repos",{method:"POST",headers:{authorization:"Bearer "+env.GITHUB_TOKEN,accept:"application/vnd.github+json","content-type":"application/json","x-github-api-version":"2022-11-28","user-agent":"JARVIS-X"},body:JSON.stringify({name:approvedName,description:String(approvedPayload.description||"Created by JARVIS X").slice(0,300),private:approvedPayload.private!==false,auto_init:true})});
     const result=await response.json();if(!response.ok)return json({error:result.message||"GitHub repository creation failed."},response.status,headers);
     await audit(env,auth,"github.repository_created",result.full_name,{url:result.html_url,private:result.private});
     return json({success:true,repository:{name:result.full_name,url:result.html_url,private:result.private}},201,headers);
    }
    if(url.pathname==="/api/deploy/cloudflare"&&request.method==="POST"){
-    const body=await request.json();const projectName=String(body.projectName||"jarvis-x-app").toLowerCase().replace(/[^a-z0-9-]/g,"-").slice(0,58);
-    await approval(env,auth,body.approvalId,"cloudflare.deploy_pages");
+    const body=await request.json();
+    const approved=await approval(env,auth,body.approvalId,"cloudflare.deploy_pages");
+    const projectName=String(approved.payload?.projectName||"").toLowerCase().replace(/[^a-z0-9-]/g,"-").slice(0,58);
+    if(!projectName)return json({error:"The approved request does not include a Pages project name."},400,headers);
     if(!env.GITHUB_TOKEN||!env.GITHUB_OWNER||!env.GITHUB_REPO)return json({error:"GitHub workflow dispatch integration is not configured."},503,headers);
-    const ref=String(body.ref||"jarvis-x-foundation");
+    const ref=String(approved.payload?.ref||"jarvis-x-foundation");
     const endpoint="https://api.github.com/repos/"+env.GITHUB_OWNER+"/"+env.GITHUB_REPO+"/actions/workflows/deploy-cloudflare.yml/dispatches";
     const response=await fetch(endpoint,{method:"POST",headers:{authorization:"Bearer "+env.GITHUB_TOKEN,accept:"application/vnd.github+json","content-type":"application/json","x-github-api-version":"2022-11-28","user-agent":"JARVIS-X"},body:JSON.stringify({ref,inputs:{project_name:projectName,branch:ref}})});
     if(!response.ok){const result=await response.json();return json({error:result.message||"Could not start Cloudflare deployment."},response.status,headers);}
