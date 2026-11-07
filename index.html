@@ -4,24 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f7f4ed">
-  <meta name="description" content="JARVIS X — your personal intelligence workspace.">
-  <title>JARVIS X — Personal Intelligence</title>
+  <meta name="description" content="JARVIS X — your private personal AI workspace.">
+  <title>JARVIS X — Private Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/jarvis-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <section id="auth-screen" class="auth-screen" hidden>
-    <div class="auth-card"><div class="brand-mark">✳</div><p class="eyebrow">PERSONAL INTELLIGENCE</p><h1>Meet your new<br><em>thinking partner.</em></h1><p class="auth-copy">A considered space for ideas, answers, research and everything you want to create.</p>
-      <button id="auth-google" class="google-button"><span class="google-g">G</span> Continue with Google</button>
-      <p id="setup-warning" class="setup-warning" hidden>Connect the Supabase project settings to activate sign-in.</p>
-      <small class="auth-foot">PRIVATE BY DESIGN · JARVIS X</small>
-    </div><div class="auth-side-note">A calmer way to think, create and get things done.</div>
-  </section>
-  <div id="app-shell" class="app-shell" hidden>
+  <div id="app-shell" class="app-shell">
     <aside id="sidebar" class="sidebar">
-      <a class="brand" href="#"><span class="brand-mark small">✳</span><span>JARVIS <b>X</b><small>PERSONAL INTELLIGENCE</small></span></a>
+      <a class="brand" href="#"><span class="brand-mark small">✳</span><span>JARVIS <b>X</b><small>PRIVATE INTELLIGENCE</small></span></a>
       <button id="new-chat" class="new-chat"><span>＋</span> New chat <kbd>⌘ K</kbd></button>
       <nav class="primary-nav">
         <button class="nav-item selected" data-view="chat"><span>▤</span> Chats</button>
@@ -32,15 +25,13 @@
         <button class="nav-item" data-view="integrations"><span>⌘</span> Integrations</button>
       </nav>
       <div class="history-heading">RECENT</div><div id="history-list" class="history-list"></div>
-      <div class="sidebar-bottom"><div class="plan-card"><span class="plan-icon">✧</span><div><b>Your workspace</b><small>Personal · Private</small></div><span class="plan-dot"></span></div>
-        <div class="profile-row"><div id="profile-avatar" class="avatar">J</div><div class="profile-meta"><b id="profile-name">Account</b><small id="profile-email"></small></div><button id="signout-button" class="icon-button" title="Sign out">↗</button></div>
-      </div>
+      <div class="sidebar-bottom"><div class="plan-card"><span class="plan-icon">✧</span><div><b>Local workspace</b><small>Only on this device</small></div><span class="plan-dot"></span></div></div>
     </aside>
     <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
     <main class="main-panel">
       <header class="topbar"><button id="menu-button" class="icon-button menu-toggle" aria-label="Open menu">☰</button><div class="breadcrumb">Workspace <span>/</span> <b>New conversation</b></div><div class="topbar-right"><span id="theme-note" class="theme-note"></span><select id="model-select" aria-label="Choose model"><option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-2.5-pro">Gemini 2.5 Pro</option></select><button id="settings-button" class="icon-button settings-button" title="Integrations and settings">⚙</button></div></header>
-      <section id="messages" class="messages"><div class="welcome"><div class="welcome-mark"><span>✳</span></div><p class="welcome-kicker">YOUR PERSONAL INTELLIGENCE</p><h1>What can I help<br><em>you with today?</em></h1></div></section>
-      <footer class="composer-wrap"><div class="composer-shell"><div id="attachment-note" class="attachment-note" hidden></div><textarea id="composer-input" rows="1" placeholder="Message Jarvis X..." aria-label="Message Jarvis X"></textarea><div class="composer-actions"><div class="composer-left"><button id="attach-button" class="tool-button" title="Attach files">＋ <span>Attach</span></button><input id="file-input" type="file" multiple hidden accept="image/*,.pdf,.txt,.md,.doc,.docx,.csv,.xlsx"><button id="voice-button" class="tool-button" title="Voice input">♩ <span>Voice</span></button></div><div class="composer-right"><span class="composer-hint">Shift + Enter for new line</span><button id="send-button" class="send-button" aria-label="Send message">↑</button></div></div></div><p class="disclaimer">Jarvis X can make mistakes. Verify important information.</p></footer>
+      <section id="messages" class="messages"></section>
+      <footer class="composer-wrap"><div class="composer-shell"><div id="attachment-note" class="attachment-note" hidden></div><textarea id="composer-input" rows="1" placeholder="Talk to JARVIS X..." aria-label="Message JARVIS X"></textarea><div class="composer-actions"><div class="composer-left"><button id="attach-button" class="tool-button" title="Attach files">＋ <span>Attach</span></button><input id="file-input" type="file" multiple hidden accept="image/*,application/pdf,.txt,.md,.csv,.json,.xml,.log"><button id="voice-button" class="tool-button" title="Voice input">♩ <span>Voice</span></button></div><div class="composer-right"><span class="composer-hint">Shift + Enter for new line</span><button id="send-button" class="send-button" aria-label="Send message">↑</button></div></div></div><p class="disclaimer">Private local workspace · JARVIS X can make mistakes; verify important actions.</p></footer>
     </main>
   </div>
   <div id="toast" class="toast" role="status"></div>
