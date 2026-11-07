@@ -20,5 +20,6 @@ export const CAPABILITY_GROUPS = [
 export function integrationStatus(id, secrets = {}) {
   const item = INTEGRATIONS.find(entry => entry.id === id);
   if (!item) return 'unknown';
-  return item.secrets.every(key => Boolean(secrets[key])) ? 'configured' : 'needs_setup';
+  if (item.setup) return 'manual_setup';
+  return item.secrets.length && item.secrets.every(key => Boolean(secrets[key])) ? 'configured' : 'needs_setup';
 }
