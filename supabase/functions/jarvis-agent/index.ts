@@ -39,6 +39,43 @@ Deno.serve(async(req:Request)=>{
   if(typeof plan.needs_clarification!=="boolean"||!Array.isArray(plan.questions)||!Array.isArray(plan.steps)||typeof plan.summary!=="string")return json({error:"The planning response was incomplete."},502);
   return json({plan,availableProviders:available,executed:false});
  }
+ if(task==="create_github_project"){
+  const name=String(p.name||"").trim(),goal=String(p.goal||"").trim().slice(0,7000);
+  if(!/^[A-Za-z0-9_.-]{1,100}$/.test(name))return json({error:"Repository name must use 1–100 letters, numbers, dots, underscores or hyphens."},400);
+  if(goal.length<20)return json({error:"Describe the project in at least 20 characters so JARVIS can generate a useful starter."},400);
+  const token=Deno.env.get("GITHUB_TOKEN"),apiKey=Deno.env.get("GEMINI_API_KEY");
+  if(!token||!apiKey)return json({error:"This action needs both GEMINI_API_KEY and GITHUB_TOKEN server secrets."},503);
+  const generated=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key="+encodeURIComponent(apiKey),{
+   method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    systemInstruction:{parts:[{text:"You are a senior software architect. Generate a small but genuinely runnable starter project matching the user's brief. Return JSON only with shape {description:string,files:[{path:string,content:string}]}. Include a useful README and minimal working source/config files. Limit to 8 files and 45000 characters per file. Avoid secrets, credentials, telemetry, hidden network calls, destructive scripts and fake functionality. Do not include package lockfiles. Choose a simple stack appropriate to the request. Do not use placeholder TODOs for core requested behavior."}]},
+    contents:[{role:"user",parts:[{text:"Create a runnable starter project. Repository: "+name+"\nProject brief: "+goal}]}],
+    generationConfig:{temperature:0.25,responseMimeType:"application/json",maxOutputTokens:12000}
+   })
+  });
+  const gen=await generated.json();
+  if(!generated.ok)return json({error:gen.error?.message||"Code generation failed."},502);
+  const raw=gen.candidates?.[0]?.content?.parts?.map((x:any)=>x.text||"").join("")||"";
+  let scaffold:any;try{scaffold=JSON.parse(raw);}catch{return json({error:"The code generator returned invalid project files."},502);}
+  if(!Array.isArray(scaffold.files)||!scaffold.files.length||scaffold.files.length>8)return json({error:"Generated project file list is invalid."},502);
+  for(const file of scaffold.files){
+   if(typeof file.path!=="string"||typeof file.content!=="string"||file.content.length>45000||file.path.startsWith("/")||file.path.split("/").some((part:string)=>part===".."||part==="."))return json({error:"Generated project contains an unsafe or oversized file path."},502);
+  }
+  const created=await fetch("https://api.github.com/user/repos",{method:"POST",headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"},body:JSON.stringify({name,description:String(scaffold.description||goal).slice(0,350),private:true,auto_init:true})});
+  const repository=await created.json();
+  if(!created.ok)return json({error:repository.message||"GitHub repository creation failed."},created.status);
+  const uploaded:string[]=[];
+  for(const file of scaffold.files){
+   const bytes=new TextEncoder().encode(file.content);let binary="";for(const byte of bytes)binary+=String.fromCharCode(byte);
+   const put=await fetch("https://api.github.com/repos/"+repository.full_name+"/contents/"+file.path.split("/").map(encodeURIComponent).join("/"),{
+    method:"PUT",headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"},
+    body:JSON.stringify({message:"JARVIS X: add "+file.path,content:btoa(binary)})
+   });
+   if(!put.ok){const failure=await put.json();return json({error:"Repository created, but upload failed at "+file.path+": "+(failure.message||"GitHub error"),repository:{name:repository.name,full_name:repository.full_name,url:repository.html_url,private:true},uploadedFiles:uploaded},502);}
+   uploaded.push(file.path);
+  }
+  return json({repository:{name:repository.name,full_name:repository.full_name,url:repository.html_url,private:true,default_branch:repository.default_branch},files:uploaded,message:"Private GitHub project created and starter files uploaded."});
+ }
  if(task==="create_github_repository"){
   const token=Deno.env.get("GITHUB_TOKEN");
   if(!token)return json({error:"Add GITHUB_TOKEN to Supabase Edge Function Secrets first."},503);
