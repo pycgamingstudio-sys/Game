@@ -1,0 +1,11 @@
+{
+  "name": "JARVIS X — Personal Intelligence",
+  "short_name": "JARVIS X",
+  "description": "A private personal AI workspace.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f4ed",
+  "theme_color": "#f7f4ed",
+  "icons": [{ "src": "/jarvis-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
