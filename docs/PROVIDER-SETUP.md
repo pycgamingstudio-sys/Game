@@ -11,7 +11,7 @@ Do not paste secrets into the chat, source code, issue comments or frontend envi
 Add these under Supabase Dashboard → Edge Functions → Secrets:
 - GEMINI_API_KEY — required for chat and agent planning.
 - TAVILY_API_KEY — Tavily web search key used by the Research workspace.
-- IMAGE_PROVIDER_API_KEY — image provider key if using a separate provider.
+- Image generation uses GEMINI_API_KEY with Gemini 3.1 Flash Image; the image model may require billing or model access in the Google AI project.
 - TTS_API_KEY — speech provider key if using a separate provider.
 - APP_ORIGIN — exact deployed frontend origin for CORS, e.g. https://app.example.com.
 - JARVIS_GATEWAY_URL — deployed Cloudflare Worker gateway URL used by the agent after approval.
