@@ -6,7 +6,7 @@ const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 export function initializeWorkspace({supabase,getUser,toast,onChat}) {
   const area=$('#messages');
   let lastPlan=null;
-  const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',research:'Research',images:'Image studio',memory:'Memory',activity:'Activity',integrations:'Integrations'};
+  const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',research:'Research',images:'Image studio',memory:'Memory',activity:'Activity',integrations:'Integrations',settings:'Settings'};
   async function refresh(){return await loadWorkspace(supabase);}
   function activate(view){
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b.dataset.view===view));
@@ -16,6 +16,7 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
     if(view==='integrations')return renderIntegrations();
     if(view==='research')return renderResearch();
     if(view==='images')return renderImageStudio();
+    if(view==='settings')return renderSettings();
     render(view);
   }
   async function render(view){
@@ -35,6 +36,23 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
       area.querySelectorAll('[data-decision]').forEach(b=>b.onclick=async()=>{try{const result=await invokeAgent(supabase,'decide_approval',{approvalId:b.dataset.id,decision:b.dataset.decision});const url=result.execution?.repository?.url||result.execution?.deploymentUrl;toast(url?`Ready: ${url}`:(result.message||'Approval updated.'));render(view);}catch(e){toast(e.message);}});
       area.querySelectorAll('[data-execute]').forEach(b=>b.onclick=async()=>{try{const result=await invokeAgent(supabase,'execute_approved',{approvalId:b.dataset.execute});const url=result.execution?.repository?.url||result.execution?.deploymentUrl;toast(url?`Ready: ${url}`:(result.execution?.message||'Execution submitted.'));render(view);}catch(e){toast(e.message);}});
     }
+  }
+  async function renderSettings(){
+    const user=getUser();let prefs=null;
+    const {data,error}=await supabase.from('jarvis_preferences').select('*').eq('user_id',user.id).maybeSingle();
+    if(error){toast(error.message);return;}prefs=data||{};
+    area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">YOUR PERSONAL WORKSPACE</p><h2>Settings</h2><p>Set how JARVIS X communicates and works with you.</p></div></div><div class="settings-panel"><label class="settings-field"><span>Preferred language</span><select id="pref-language"><option value="auto">Automatic</option><option value="hi">Hindi</option><option value="en">English</option><option value="hinglish">Hinglish</option></select></label><label class="settings-field"><span>Default AI model</span><select id="pref-model"><option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-2.5-pro">Gemini 2.5 Pro</option></select></label><label class="settings-field"><span>Personal instructions</span><textarea id="pref-instructions" rows="5" maxlength="3000" placeholder="Tell JARVIS X how you prefer answers, what to remember, and how it should help…"></textarea><small>These instructions are added to your AI conversations. Do not put passwords or API keys here.</small></label><label class="settings-check"><input type="checkbox" id="pref-voice"><span>Read responses aloud when I choose Read aloud</span></label><div class="settings-theme"><b>Appearance</b><span>Pearl · Ivory · Champagne — light theme only</span></div><button class="gold-button" id="save-preferences">Save preferences</button></div></div>`;
+    $('#pref-language').value=prefs.preferred_language||'auto';
+    $('#pref-model').value=prefs.selected_model||'gemini-2.5-flash';
+    $('#pref-instructions').value=prefs.custom_instructions||'';
+    $('#pref-voice').checked=prefs.settings?.voice_output!==false;
+    $('#save-preferences').onclick=async()=>{
+      const selectedModel=$('#pref-model').value;
+      const {error:saveError}=await supabase.from('jarvis_preferences').upsert({user_id:user.id,preferred_language:$('#pref-language').value,selected_model:selectedModel,custom_instructions:$('#pref-instructions').value.trim(),settings:{voice_output:$('#pref-voice').checked},updated_at:new Date().toISOString()});
+      if(saveError)return toast(saveError.message);
+      const modelSelect=$('#model-select');if(modelSelect){modelSelect.value=selectedModel;modelSelect.dispatchEvent(new Event('change'));}
+      toast('Preferences saved.');
+    };
   }
   async function renderImageStudio(){
     area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">CREATIVE STUDIO</p><h2>Image studio</h2><p>Create images from a prompt and keep them in your private workspace.</p></div></div><div class="research-launch"><textarea id="image-prompt" rows="4" placeholder="Describe the image in detail…"></textarea><div class="image-controls"><label>Aspect ratio <select id="image-ratio"><option>1:1</option><option>16:9</option><option>9:16</option><option>3:2</option><option>2:3</option><option>4:3</option><option>3:4</option><option>4:5</option><option>5:4</option><option>21:9</option></select></label><button class="gold-button" id="generate-image">Generate image ↗</button></div><small class="image-note">Image generation uses your Gemini API key. Provider billing or model access may be required.</small></div><div id="image-result"></div></div>`;
@@ -74,6 +92,6 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
     area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">CONNECT YOUR SERVICES</p><h2>Integrations</h2><p>Provider credentials belong in secure server-side secrets, never in browser code or chat.</p></div></div><div class="integration-grid">${INTEGRATIONS.map(item=>{const ready=providers.find(p=>p.id===item.id)?.configured||false;return `<article class="integration-card"><div class="integration-top"><span class="integration-icon">${item.id==='github'?'⌘':item.id==='cloudflare'?'☁':item.id==='gemini'?'✳':'◇'}</span><span class="status-pill ${ready?'ready':''}">${ready?'Configured':item.setup?'Dashboard setup':'Needs setup'}</span></div><h3>${esc(item.name)}</h3><small>${esc(item.category)}</small><p>${item.capabilities.map(esc).join(' · ')}</p>${item.setup||item.instructions?`<div class="setup-copy">${esc(item.setup||item.instructions)}</div>`:''}<div class="secret-list">${item.secrets.map(k=>`<code>${esc(k)}</code>`).join('')}</div></article>`}).join('')}</div><div class="notice-card"><b>Where do API keys go?</b><p>Each provider has its own secure location: Supabase Edge Function Secrets, GitHub Actions Secrets, frontend public configuration, or OAuth provider settings. Follow the instructions shown on each card. Never put private tokens in browser code or chat.</p><a href="https://supabase.com/dashboard/project/tmlrveloeirxsankeqrs/functions/secrets" target="_blank" rel="noreferrer">Open Edge Function secrets ↗</a></div></div>`;
   }
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>activate(b.dataset.view)));
-  $('.settings-button')?.addEventListener('click',()=>activate('integrations'));
+  $('.settings-button')?.addEventListener('click',()=>activate('settings'));
   window.addEventListener('jarvis:navigate',e=>activate(e.detail));
 }
