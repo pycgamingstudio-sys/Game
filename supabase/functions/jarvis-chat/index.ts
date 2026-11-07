@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
       }
       return { role: m.role === "assistant" ? "model" : "user", parts };
     });
-    const upstream = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/\${model}:generateContent?key=\${apiKey}\`, {
+    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(apiKey), {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents,
