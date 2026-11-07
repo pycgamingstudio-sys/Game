@@ -33,8 +33,8 @@ Deno.serve(async (req: Request) => {
       const parts: any[] = [{ text: m.content.slice(0, 20000) }];
       if (index === messages.length - 1 && m.role === "user" && Array.isArray(body.attachments)) {
         for (const file of body.attachments.slice(0, 5)) {
-          if (typeof file.text === "string") parts.push({ text: "\\n\\n[Attached file: " + String(file.name || "file").slice(0, 160) + "]\\n" + file.text.slice(0, 120000) });
-          else if (typeof file.dataUrl === "string" && /^(data:image\\/(png|jpeg|webp|gif)|data:application\\/pdf);base64,/i.test(file.dataUrl)) {
+          if (typeof file.text === "string") parts.push({ text: "\n\n[Attached file: " + String(file.name || "file").slice(0, 160) + "]\n" + file.text.slice(0, 120000) });
+          else if (typeof file.dataUrl === "string" && /^(data:image\/(png|jpeg|webp|gif)|data:application\/pdf);base64,/i.test(file.dataUrl)) {
             const match = file.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
             if (match && match[2].length < 14000000) parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
           } else if (file.unsupported) parts.push({ text: "[Unsupported attachment format: " + String(file.name || "file").slice(0, 160) + "]" });
@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
       }
       return { role: m.role === "assistant" ? "model" : "user", parts };
     });
-    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    const upstream = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/\${model}:generateContent?key=\${apiKey}\`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents,
