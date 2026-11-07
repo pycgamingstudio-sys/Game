@@ -46,7 +46,7 @@ export default {
     if(!files.length||files.length>30)return json({error:"The approved request must include 1–30 generated project files."},400,headers);
     let totalBytes=0;
     for(const file of files){
-      if(typeof file.path!=="string"||!file.path||file.path.startsWith("/")||file.path.split("/").includes("..")||typeof file.content!=="string")return json({error:"A generated file path or content is invalid."},400,headers);
+      if(typeof file.path!=="string"||!file.path||file.path.startsWith("/")||file.path.includes("\\\\")||file.path.split("/").includes("..")||file.path.startsWith(".github/workflows/")||file.path===".npmrc"||typeof file.content!=="string")return json({error:"A generated file path or content is invalid."},400,headers);
       totalBytes+=new TextEncoder().encode(file.content).length;
     }
     if(totalBytes>300000)return json({error:"Generated project files exceed the 300 KB initial commit limit."},413,headers);
