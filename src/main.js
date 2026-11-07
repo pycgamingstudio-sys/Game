@@ -147,6 +147,38 @@ function renderLocalPage(view) {
   };
   const [title,sub,detail]=pages[view]||pages.chat;
   area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">PRIVATE WORKSPACE</p><h2>${title}</h2><p>${sub}</p></div></div><div class="notice-card"><b>${title}</b><p>${detail}</p></div><div class="section-title">Build status</div><div class="capability-grid"><article class="capability-card"><h3>Conversation</h3><p>Local chat history · voice input · read aloud</p></article><article class="capability-card"><h3>Files</h3><p>Text, CSV, PDF and image analysis integration point</p></article><article class="capability-card"><h3>Developer tools</h3><p>GitHub repository, branch, commit and pull request tools</p></article><article class="capability-card"><h3>Autonomy</h3><p>Planning, clarifying questions, approval and audit trail</p></article></div></div>`;
+  if (view === 'tools') {
+    area.insertAdjacentHTML('beforeend', `<div class="notice-card repo-create-card">
+      <b>Plan a task with JARVIS X</b>
+      <p>Describe the result you want. JARVIS will ask questions first when important details are missing, then prepare a step-by-step plan. Planning does not execute external actions.</p>
+      <label class="repo-field-label" for="agent-goal">What should I help you accomplish?</label>
+      <textarea id="agent-goal" class="repo-field" rows="5" maxlength="6000" placeholder="Example: Create a private Android app repository, set up the project structure, and prepare the first working screen."></textarea>
+      <button id="plan-agent-task" class="gold-button">Understand & plan ↗</button>
+      <div id="agent-plan-result" class="repo-result" aria-live="polite"></div>
+    </div>`);
+    $('#plan-agent-task').onclick = async () => {
+      const goal=$('#agent-goal').value.trim();
+      if(!goal)return toast('Tell me what outcome you want first.');
+      if(!configured || !supabase)return toast('Add the private Supabase connection and Gemini server secret first.');
+      const button=$('#plan-agent-task'),result=$('#agent-plan-result');
+      button.disabled=true;button.textContent='Thinking…';result.textContent='Understanding your request…';
+      try {
+        const {data,error}=await supabase.functions.invoke('jarvis-agent',{body:{task:'plan_task',payload:{goal}}});
+        if(error)throw new Error(error.message||'Planning request failed.');
+        if(data?.error)throw new Error(data.error);
+        const plan=data.plan;
+        const questions=Array.isArray(plan.questions)?plan.questions:[];
+        const steps=Array.isArray(plan.steps)?plan.steps:[];
+        result.innerHTML=`<div class="agent-plan"><h3>${plan.needs_clarification?'A few things to clarify':'Proposed plan'}</h3><p>${escapeHtml(plan.summary||'')}</p>${questions.length?'<ol>'+questions.map(q=>'<li>'+escapeHtml(q)+'</li>').join('')+'</ol>':''}${steps.length?'<ol>'+steps.map(step=>'<li><b>'+escapeHtml(step.title||'Step')+'</b><p>'+escapeHtml(step.description||'')+'</p><small>'+escapeHtml(step.provider||'No external provider')+(step.requiresApproval?' · approval required':'')+'</small></li>').join('')+'</ol>':''}<p class="plan-footnote">Plan only · No external changes have been made.</p></div>`;
+        if(plan.needs_clarification && questions.length) {
+          $('#composer-input').value=questions.map((q,i)=>(i+1)+'. '+q).join('\\n')+'\\n\\n';
+          $('#composer-input').focus();
+          toast('Answer these questions in chat so I can refine the plan.');
+        }
+      } catch(error) {result.textContent=error.message;toast(error.message);}
+      finally {button.disabled=false;button.textContent='Understand & plan ↗';}
+    };
+  }
   if (view === 'projects') {
     area.insertAdjacentHTML('beforeend', `<div class="notice-card repo-create-card">
       <b>Create a new GitHub repository</b>
