@@ -117,7 +117,8 @@ async function sendMessage() {
   catch(error) { state.busy=false; $('#send-button').disabled=false; toast(error.message); return; }
   const attachmentNames=attachments.map(a=>a.name);
   const visibleText=content || ('Please inspect these attached files: '+attachmentNames.join(', '));
-  state.messages.push({role:'user',content:visibleText+(attachmentNames.length?'\n\nAttached: '+attachmentNames.join(', '):'')});\n  state.activity.unshift({id:crypto.randomUUID(),action:'Conversation message',details:visibleText.slice(0,120),at:new Date().toISOString()}); state.activity=state.activity.slice(0,100);
+  state.messages.push({role:'user',content:visibleText+(attachmentNames.length?'\n\nAttached: '+attachmentNames.join(', '):'')});
+  state.activity.unshift({id:crypto.randomUUID(),action:'Conversation message',details:visibleText.slice(0,120),at:new Date().toISOString()}); state.activity=state.activity.slice(0,100);
   renderMessages(); const item=currentConversation(); item.messages=state.messages; item.updatedAt=new Date().toISOString();
   if (item.title==='New chat') item.title=visibleText.slice(0,48) || 'File analysis';
   persist(); renderConversations();
