@@ -60,8 +60,11 @@ export default {
     const commit=await commitResponse.json();if(!commitResponse.ok)return json({error:"Repository created, but initial commit failed: "+(commit.message||"GitHub error"),repository:result.html_url},502,headers);
     const refResponse=await fetch("https://api.github.com/repos/"+result.full_name+"/git/refs",{method:"POST",headers:apiHeaders,body:JSON.stringify({ref:"refs/heads/main",sha:commit.sha})});
     const refResult=await refResponse.json();if(!refResponse.ok)return json({error:"Repository created, but main branch creation failed: "+(refResult.message||"GitHub error"),repository:result.html_url},502,headers);
-    await audit(env,auth,"github.repository_created",result.full_name,{url:result.html_url,private:result.private,fileCount:files.length,commit:commit.sha});
-    return json({success:true,repository:{name:result.full_name,url:result.html_url,private:result.private,defaultBranch:"main",fileCount:files.length,commit:commit.sha}},201,headers);
+    let projectId=null;
+    const projectResponse=await fetch(env.SUPABASE_URL+"/rest/v1/jarvis_projects",{method:"POST",headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,authorization:"Bearer "+auth.token,"content-type":"application/json",prefer:"return=representation"},body:JSON.stringify({user_id:auth.user.id,name:approvedName,description:String(approvedPayload.description||"Created by JARVIS X"),project_type:"app",status:"active",repository_url:result.html_url,metadata:{generated_by:"jarvis-x",commit:commit.sha,branch:"main",files_count:files.length}})});
+    if(projectResponse.ok){const rows=await projectResponse.json();projectId=rows[0]?.id||null;}
+    await audit(env,auth,"github.repository_created",result.full_name,{url:result.html_url,private:result.private,fileCount:files.length,commit:commit.sha,projectId});
+    return json({success:true,projectId,repository:{name:result.full_name,url:result.html_url,private:result.private,defaultBranch:"main",fileCount:files.length,commit:commit.sha}},201,headers);
    }
    if(url.pathname==="/api/deploy/cloudflare"&&request.method==="POST"){
     const body=await request.json();
@@ -74,8 +77,21 @@ export default {
     const endpoint="https://api.github.com/repos/"+env.GITHUB_OWNER+"/"+env.GITHUB_REPO+"/actions/workflows/deploy-cloudflare.yml/dispatches";
     const response=await fetch(endpoint,{method:"POST",headers:{authorization:"Bearer "+env.GITHUB_TOKEN,accept:"application/vnd.github+json","content-type":"application/json","x-github-api-version":"2022-11-28","user-agent":"JARVIS-X"},body:JSON.stringify({ref:"jarvis-x-foundation",inputs:{project_name:projectName,branch:ref,repository}})});
     if(!response.ok){const result=await response.json();return json({error:result.message||"Could not start Cloudflare deployment."},response.status,headers);}
-    await audit(env,auth,"cloudflare.deployment_requested",projectName,{ref});
-    return json({success:true,status:"queued",message:"Cloudflare deployment workflow started.",projectName,deploymentUrl:"https://"+projectName+".pages.dev",repository,branch:ref,workflow:"deploy-cloudflare.yml"},202,headers);
+    const deploymentUrl="https://"+projectName+".pages.dev";
+    const projectQuery=new URL(env.SUPABASE_URL+"/rest/v1/jarvis_projects");
+    projectQuery.searchParams.set("user_id","eq."+auth.user.id);
+    projectQuery.searchParams.set("repository_url","eq.https://github.com/"+repository);
+    projectQuery.searchParams.set("select","id,metadata");
+    const projectLookup=await fetch(projectQuery,{headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,authorization:"Bearer "+auth.token}});
+    if(projectLookup.ok){
+      const rows=await projectLookup.json();
+      if(rows[0]){
+        const metadata={...(rows[0].metadata||{}),deployment_status:"queued",cloudflare_project:projectName};
+        await fetch(env.SUPABASE_URL+"/rest/v1/jarvis_projects?id=eq."+rows[0].id,{method:"PATCH",headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,authorization:"Bearer "+auth.token,"content-type":"application/json",prefer:"return=minimal"},body:JSON.stringify({deployment_url:deploymentUrl,metadata,updated_at:new Date().toISOString()})});
+      }
+    }
+    await audit(env,auth,"cloudflare.deployment_requested",projectName,{ref,repository,deploymentUrl});
+    return json({success:true,status:"queued",message:"Cloudflare deployment workflow started.",projectName,deploymentUrl,repository,branch:ref,workflow:"deploy-cloudflare.yml"},202,headers);
    }
    return json({error:"Route not found."},404,headers);
   }catch(error){return json({error:error instanceof Error?error.message:"Gateway error."},401,headers);}
