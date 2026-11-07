@@ -36,7 +36,7 @@ async function attachmentPart(supabase: any, userId: string, attachment: any): P
     const text = new TextDecoder().decode(bytes);
     return { part:{text: "\n\n[Attached file: " + fileName + "]\n" + text.slice(0, 100000)}, size:bytes.byteLength };
   }
-  return { text: "\n\n[Attached file: " + fileName + " — uploaded securely, but this file format is not yet supported for content extraction.]"};
+  return { part:{text: "\n\n[Attached file: " + fileName + " — uploaded securely, but this file format is not yet supported for content extraction.]"}, size:bytes.byteLength };
 }
 
 Deno.serve(async (req: Request) => {
