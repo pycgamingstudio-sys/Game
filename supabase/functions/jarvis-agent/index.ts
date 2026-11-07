@@ -41,12 +41,24 @@ Deno.serve(async(req:Request)=>{
   if(task==="run_agent"){
    const goal=String(p.goal||"").trim().slice(0,4000);if(!goal)return json({error:"Describe what you want the agent to do."},400);
    if(!configured("gemini"))return json({error:"AI planning requires the Gemini API key.",missingProviders:["gemini"]},503);
-   const {data:run,error}=await supabase.from("jarvis_agent_runs").insert({user_id:user.id,goal,status:"planning"}).select().single();if(error)return json({error:error.message},400);
-   const plan=[{step:1,description:"Analyze the request and prepare an execution plan",status:"planned"},{step:2,description:"Check connected providers and permissions",status:"planned"},{step:3,description:"Request approval for external or destructive actions",status:"planned"}];
-   await supabase.from("jarvis_agent_runs").update({status:"waiting_approval",plan}).eq("id",run.id).eq("user_id",user.id);
    const available=Object.keys(required).filter(configured);
+   const planResponse=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+encodeURIComponent(Deno.env.get("GEMINI_API_KEY")!),{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+     systemInstruction:{parts:[{text:"You are JARVIS X task planner. Convert the user's goal into a practical ordered execution plan. Do not claim to execute actions. Mark steps that need external provider integrations or user approval. Return JSON only with shape {summary:string,steps:[{title:string,description:string,provider:string|null,requiresApproval:boolean,kind:string}]}."}]},
+     contents:[{role:"user",parts:[{text:"Goal: "+goal+"\\nConnected providers: "+available.join(", ")+"\\nAvailable integrations can still require additional OAuth scopes, project access, billing or configuration. Plan safely."}]}],
+     generationConfig:{temperature:0.2,responseMimeType:"application/json",maxOutputTokens:3000}
+    })
+   });
+   const planResult=await planResponse.json();
+   if(!planResponse.ok)return json({error:planResult.error?.message||"AI planner request failed."},502);
+   const planText=planResult.candidates?.[0]?.content?.parts?.map((part:any)=>part.text||"").join("")||"";
+   let plan:any;try{plan=JSON.parse(planText);}catch{return json({error:"AI planner returned invalid structured output."},502);}
+   if(!Array.isArray(plan.steps)||!plan.summary)return json({error:"AI planner returned an incomplete plan."},502);
+   const {data:run,error}=await supabase.from("jarvis_agent_runs").insert({user_id:user.id,goal,status:"waiting_approval",plan:plan.steps,result:{summary:plan.summary,model:"gemini-2.5-flash"}}).select().single();
+   if(error)return json({error:error.message},400);
    await supabase.from("jarvis_audit_logs").insert({user_id:user.id,run_id:run.id,action:"agent.plan_created",details:{goal,availableProviders:available}});
-   return json({run:{...run,status:"waiting_approval",plan},availableProviders:available,message:"Plan created. External actions still require provider access and explicit approval."});
+   return json({run,summary:plan.summary,steps:plan.steps,availableProviders:available,message:"AI execution plan created. No external action has been run yet."});
   }
   return json({error:"Unknown agent task.",supported:["capabilities","create_project","create_task","request_approval","decide_approval","run_agent"]},400);
  }catch(error){return json({error:error instanceof Error?error.message:"Unexpected agent error"},500);}
