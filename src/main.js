@@ -13,7 +13,7 @@ const supabase = configured ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseKe
 
 const $ = (selector) => document.querySelector(selector);
 const STORAGE_KEY = 'jarvis-x-local-workspace-v1';
-const state = { conversations: [], activeId: null, messages: [], model: 'gemini-2.5-flash', busy: false, files: [] };
+const state = { conversations: [], projects: [], memories: [], activity: [], activeId: null, messages: [], model: 'gemini-2.5-flash', busy: false, files: [] };
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -23,13 +23,13 @@ function toast(message) {
   clearTimeout(state.toastTimer); state.toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
 }
 function persist() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ conversations: state.conversations })); }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ conversations: state.conversations, projects: state.projects, memories: state.memories, activity: state.activity })); }
   catch { toast('Local storage is full. Remove some large conversations.'); }
 }
 function loadLocal() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    state.conversations = Array.isArray(saved.conversations) ? saved.conversations : [];
+    state.conversations = Array.isArray(saved.conversations) ? saved.conversations : [];\n    state.projects = Array.isArray(saved.projects) ? saved.projects : [];\n    state.memories = Array.isArray(saved.memories) ? saved.memories : [];\n    state.activity = Array.isArray(saved.activity) ? saved.activity : [];
   } catch { state.conversations = []; }
   renderConversations();
   if (state.conversations.length) openConversation(state.conversations[0].id);
@@ -147,6 +147,47 @@ function renderLocalPage(view) {
   };
   const [title,sub,detail]=pages[view]||pages.chat;
   area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">PRIVATE WORKSPACE</p><h2>${title}</h2><p>${sub}</p></div></div><div class="notice-card"><b>${title}</b><p>${detail}</p></div><div class="section-title">Build status</div><div class="capability-grid"><article class="capability-card"><h3>Conversation</h3><p>Local chat history · voice input · read aloud</p></article><article class="capability-card"><h3>Files</h3><p>Text, CSV, PDF and image analysis integration point</p></article><article class="capability-card"><h3>Developer tools</h3><p>GitHub repository, branch, commit and pull request tools</p></article><article class="capability-card"><h3>Autonomy</h3><p>Planning, clarifying questions, approval and audit trail</p></article></div></div>`;
+  if (view === 'projects') {
+    area.insertAdjacentHTML('beforeend', `<div class="notice-card repo-create-card">
+      <b>Create a local project</b><p>Organise an idea or a software project in this private browser workspace.</p>
+      <label class="repo-field-label" for="local-project-name">Project name</label><input id="local-project-name" class="repo-field" maxlength="100" placeholder="My next project">
+      <label class="repo-field-label" for="local-project-description">What is it about?</label><textarea id="local-project-description" class="repo-field" rows="3" maxlength="1500" placeholder="Describe the outcome..."></textarea>
+      <button id="save-local-project" class="gold-button">Save project</button><div id="local-project-list" class="workspace-list"></div>
+    </div>`);
+    const renderProjects=()=>$('#local-project-list').innerHTML=state.projects.length?state.projects.map(p=>'<div class="list-card"><div><b>'+escapeHtml(p.name)+'</b><small>'+escapeHtml(p.description||'Personal project')+' · '+new Date(p.createdAt).toLocaleDateString()+'</small></div><button class="text-button" data-remove-project="'+escapeHtml(p.id)+'">Delete</button></div>').join(''):'<div class="empty-card">Your local projects will appear here.</div>';
+    renderProjects();
+    $('#save-local-project').onclick=()=>{
+      const name=$('#local-project-name').value.trim();if(!name)return toast('Enter a project name.');
+      state.projects.unshift({id:crypto.randomUUID(),name,description:$('#local-project-description').value.trim(),createdAt:new Date().toISOString()});
+      state.activity.unshift({id:crypto.randomUUID(),action:'Project created',details:name,at:new Date().toISOString()});persist();renderProjects();toast('Project saved on this device.');
+      $('#local-project-name').value='';$('#local-project-description').value='';
+    };
+    $('#local-project-list').addEventListener('click',e=>{const id=e.target?.dataset?.removeProject;if(!id)return;state.projects=state.projects.filter(p=>p.id!==id);persist();renderProjects();});
+  }
+  if (view === 'memory') {
+    area.insertAdjacentHTML('beforeend', `<div class="notice-card repo-create-card">
+      <b>Save a memory</b><p>Store preferences, project facts or instructions locally. Nothing is sent to a provider from this screen.</p>
+      <label class="repo-field-label" for="memory-title">Title</label><input id="memory-title" class="repo-field" maxlength="100" placeholder="My preferred workflow">
+      <label class="repo-field-label" for="memory-content">Memory</label><textarea id="memory-content" class="repo-field" rows="4" maxlength="3000" placeholder="What should JARVIS remember?"></textarea>
+      <button id="save-memory" class="gold-button">Save memory</button><div id="memory-list" class="workspace-list"></div>
+    </div>`);
+    const renderMemories=()=>$('#memory-list').innerHTML=state.memories.length?state.memories.map(m=>'<div class="list-card"><div><b>'+escapeHtml(m.title)+'</b><small>'+escapeHtml(m.content)+'</small></div><button class="text-button" data-remove-memory="'+escapeHtml(m.id)+'">Delete</button></div>').join(''):'<div class="empty-card">No saved memories yet.</div>';
+    renderMemories();
+    $('#save-memory').onclick=()=>{const title=$('#memory-title').value.trim(),content=$('#memory-content').value.trim();if(!title||!content)return toast('Add both a title and memory.');state.memories.unshift({id:crypto.randomUUID(),title,content,createdAt:new Date().toISOString()});state.activity.unshift({id:crypto.randomUUID(),action:'Memory saved',details:title,at:new Date().toISOString()});persist();renderMemories();$('#memory-title').value='';$('#memory-content').value='';toast('Memory saved locally.');};
+    $('#memory-list').addEventListener('click',e=>{const id=e.target?.dataset?.removeMemory;if(!id)return;state.memories=state.memories.filter(m=>m.id!==id);persist();renderMemories();});
+  }
+  if (view === 'activity') {
+    area.insertAdjacentHTML('beforeend','<div class="notice-card"><b>Local activity log</b><p>Records saved by this workspace on this device. External actions will appear only after a provider confirms them.</p><div class="workspace-list" id="activity-list"></div></div>');
+    $('#activity-list').innerHTML=state.activity.length?state.activity.map(a=>'<div class="list-card"><div><b>'+escapeHtml(a.action)+'</b><small>'+escapeHtml(a.details||'')+' · '+new Date(a.at).toLocaleString()+'</small></div></div>').join(''):'<div class="empty-card">No activity recorded yet.</div>';
+  }
+  if (view === 'integrations') {
+    area.insertAdjacentHTML('beforeend','<div class="notice-card"><b>Provider connection status</b><p>Only server-side secret presence is checked. This does not guarantee account permissions, billing or API access.</p><div id="provider-status" class="workspace-list">Checking configured providers…</div></div>');
+    if(configured&&supabase) supabase.functions.invoke('jarvis-agent',{body:{task:'capabilities'}}).then(({data,error})=>{
+      const el=$('#provider-status');if(!el)return;if(error||data?.error){el.textContent=error?.message||data?.error||'Could not read provider status.';return;}
+      el.innerHTML=(data.providers||[]).map(p=>'<div class="list-card"><div><b>'+escapeHtml(p.id)+'</b><small>Required: '+escapeHtml((p.requiredSecrets||[]).join(', '))+'</small></div><span class="status-pill '+(p.configured?'ready':'')+'">'+(p.configured?'Secret present':'Not configured')+'</span></div>').join('');
+    }).catch(()=>{const el=$('#provider-status');if(el)el.textContent='Could not read provider status.';});
+    else $('#provider-status').textContent='Add the private connection settings to enable provider status checks.';
+  }
   if (view === 'tools') {
     area.insertAdjacentHTML('beforeend', `<div class="notice-card repo-create-card">
       <b>Plan a task with JARVIS X</b>
