@@ -36,7 +36,17 @@ Deno.serve(async(req:Request)=>{
    const {data,error}=await supabase.from("jarvis_approvals").update({status:decision,decided_at:new Date().toISOString()}).eq("id",id).eq("user_id",user.id).eq("status","pending").select().single();
    if(error||!data)return json({error:error?.message||"Pending approval not found."},404);
    await supabase.from("jarvis_audit_logs").insert({user_id:user.id,action:"approval."+decision,target:id,details:{approved_action:data.action}});
-   return json({approval:data,message:decision==="approved"?"Approved. The executor still requires provider access and the relevant integration.":"Rejected. No action was executed."});
+   if(decision==="approved" && ["github.create_repository","cloudflare.deploy_pages"].includes(data.action)){
+    const gateway=Deno.env.get("JARVIS_GATEWAY_URL");
+    if(!gateway)return json({approval:data,execution:{status:"waiting_for_gateway"},message:"Approved. Add JARVIS_GATEWAY_URL to Supabase Edge Function Secrets to enable execution."});
+    const route=data.action==="github.create_repository"?"/api/github/repositories":"/api/deploy/cloudflare";
+    const payload=data.action==="github.create_repository"?{...data.payload,approvalId:id}:{projectName:data.payload?.projectName,ref:data.payload?.ref,approvalId:id};
+    const executionResponse=await fetch(gateway.replace(/\\/$/,"")+route,{method:"POST",headers:{"Authorization":auth,"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const execution=await executionResponse.json();
+    await supabase.from("jarvis_audit_logs").insert({user_id:user.id,action:"approval.execution_attempted",target:id,status:executionResponse.ok?"success":"failed",details:execution});
+    return json({approval:data,execution,message:executionResponse.ok?"Approved action submitted to the connected provider.":"Approval saved, but provider execution failed."},executionResponse.ok?200:502);
+   }
+   return json({approval:data,message:decision==="approved"?"Approved. No external execution was associated with this action.":"Rejected. No action was executed."});
   }
   if(task==="run_agent"){
    const goal=String(p.goal||"").trim().slice(0,4000);if(!goal)return json({error:"Describe what you want the agent to do."},400);
@@ -45,7 +55,7 @@ Deno.serve(async(req:Request)=>{
    const planResponse=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+encodeURIComponent(Deno.env.get("GEMINI_API_KEY")!),{
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
-     systemInstruction:{parts:[{text:"You are JARVIS X task planner. Convert the user's goal into a practical ordered execution plan. Do not claim to execute actions. Mark steps that need external provider integrations or user approval. Return JSON only with shape {summary:string,steps:[{title:string,description:string,provider:string|null,requiresApproval:boolean,kind:string}]}."}]},
+     systemInstruction:{parts:[{text:"You are JARVIS X task planner. Convert the user's goal into a practical ordered execution plan. Do not claim to execute actions. Mark steps that need external provider integrations or user approval. Return JSON only with shape {summary:string,steps:[{title:string,description:string,provider:string|null,requiresApproval:boolean,kind:string,parameters:object}]} Include parameters.name and parameters.description for create_repository steps; include parameters.projectName for deploy_pages steps.."}]},
      contents:[{role:"user",parts:[{text:"Goal: "+goal+"\\nConnected providers: "+available.join(", ")+"\\nAvailable integrations can still require additional OAuth scopes, project access, billing or configuration. Plan safely."}]}],
      generationConfig:{temperature:0.2,responseMimeType:"application/json",maxOutputTokens:3000}
     })
@@ -57,8 +67,18 @@ Deno.serve(async(req:Request)=>{
    if(!Array.isArray(plan.steps)||!plan.summary)return json({error:"AI planner returned an incomplete plan."},502);
    const {data:run,error}=await supabase.from("jarvis_agent_runs").insert({user_id:user.id,goal,status:"waiting_approval",plan:plan.steps,result:{summary:plan.summary,model:"gemini-2.5-flash"}}).select().single();
    if(error)return json({error:error.message},400);
-   await supabase.from("jarvis_audit_logs").insert({user_id:user.id,run_id:run.id,action:"agent.plan_created",details:{goal,availableProviders:available}});
-   return json({run,summary:plan.summary,steps:plan.steps,availableProviders:available,message:"AI execution plan created. No external action has been run yet."});
+   const approvals:any[]=[];
+   for(const step of plan.steps){
+    let action="";
+    if(step.requiresApproval && step.provider==="github" && step.kind==="create_repository")action="github.create_repository";
+    if(step.requiresApproval && step.provider==="cloudflare" && step.kind==="deploy_pages")action="cloudflare.deploy_pages";
+    if(action){
+     const {data:approval,error:approvalError}=await supabase.from("jarvis_approvals").insert({user_id:user.id,action,payload:step.parameters&&typeof step.parameters==="object"?step.parameters:{},status:"pending"}).select().single();
+     if(!approvalError&&approval)approvals.push({id:approval.id,action,step:step.title,payload:approval.payload});
+    }
+   }
+   await supabase.from("jarvis_audit_logs").insert({user_id:user.id,run_id:run.id,action:"agent.plan_created",details:{goal,availableProviders:available,approvalCount:approvals.length}});
+   return json({run,summary:plan.summary,steps:plan.steps,approvals,availableProviders:available,message:"AI execution plan created. External actions are waiting for your approval."});
   }
   return json({error:"Unknown agent task.",supported:["capabilities","create_project","create_task","request_approval","decide_approval","run_agent"]},400);
  }catch(error){return json({error:error instanceof Error?error.message:"Unexpected agent error"},500);}
