@@ -147,6 +147,36 @@ function renderLocalPage(view) {
   };
   const [title,sub,detail]=pages[view]||pages.chat;
   area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">PRIVATE WORKSPACE</p><h2>${title}</h2><p>${sub}</p></div></div><div class="notice-card"><b>${title}</b><p>${detail}</p></div><div class="section-title">Build status</div><div class="capability-grid"><article class="capability-card"><h3>Conversation</h3><p>Local chat history · voice input · read aloud</p></article><article class="capability-card"><h3>Files</h3><p>Text, CSV, PDF and image analysis integration point</p></article><article class="capability-card"><h3>Developer tools</h3><p>GitHub repository, branch, commit and pull request tools</p></article><article class="capability-card"><h3>Autonomy</h3><p>Planning, clarifying questions, approval and audit trail</p></article></div></div>`;
+  if (view === 'projects') {
+    area.insertAdjacentHTML('beforeend', `<div class="notice-card repo-create-card">
+      <b>Create a new GitHub repository</b>
+      <p>JARVIS X can create a private repository in the GitHub account connected by your server-side token.</p>
+      <label class="repo-field-label" for="repo-name">Repository name</label>
+      <input id="repo-name" class="repo-field" maxlength="100" placeholder="my-new-project">
+      <label class="repo-field-label" for="repo-description">Description (optional)</label>
+      <input id="repo-description" class="repo-field" maxlength="350" placeholder="What will this project do?">
+      <label class="repo-private"><input id="repo-private" type="checkbox" checked> Create as a private repository</label>
+      <button id="create-github-repo" class="gold-button">Create repository ↗</button>
+      <div id="repo-result" class="repo-result" aria-live="polite"></div>
+    </div>`);
+    $('#create-github-repo').onclick = async () => {
+      const name=$('#repo-name').value.trim();
+      if(!name)return toast('Enter a repository name first.');
+      if(!configured || !supabase)return toast('Add the local connection settings first.');
+      const button=$('#create-github-repo'); button.disabled=true; button.textContent='Creating…';
+      try {
+        const {data,error}=await supabase.functions.invoke('jarvis-agent',{body:{task:'create_github_repository',payload:{name,description:$('#repo-description').value.trim(),private:$('#repo-private').checked}}});
+        if(error)throw new Error(error.message||'GitHub request failed.');
+        if(data?.error)throw new Error(data.error);
+        const repo=data.repository;
+        $('#repo-result').innerHTML='Created: <a href="'+escapeHtml(repo.url)+'" target="_blank" rel="noreferrer">'+escapeHtml(repo.full_name)+'</a> · '+(repo.private?'Private':'Public');
+        toast('GitHub repository created.');
+      } catch(error) {
+        $('#repo-result').textContent=error.message;
+        toast(error.message);
+      } finally { button.disabled=false; button.textContent='Create repository ↗'; }
+    };
+  }
 }
 function setupUI() {
   $('#new-chat').addEventListener('click',newConversation);
