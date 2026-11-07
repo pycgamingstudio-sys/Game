@@ -151,7 +151,7 @@ function setupUI() {
   $('#send-button').addEventListener('click',sendMessage);
   $('#composer-input').addEventListener('input',resizeComposer);
   $('#composer-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
-  $('#model-select').addEventListener('change',e=>state.model=e.target.value);
+  $('#model-select').addEventListener('change',async e=>{state.model=e.target.value;if(state.user)await supabase.from('jarvis_preferences').upsert({user_id:state.user.id,selected_model:state.model,updated_at:new Date().toISOString()});});
   $('#signout-button').addEventListener('click',()=>supabase.auth.signOut());
   $('#menu-button').addEventListener('click',()=>{ $('#sidebar').classList.add('open'); $('#sidebar-backdrop').classList.add('visible');});
   $('#sidebar-backdrop').addEventListener('click',closeSidebar);
@@ -176,11 +176,16 @@ function setupUI() {
   $('#theme-note').textContent='Pearl · Champagne · Ivory';
   initializeWorkspace({supabase,getUser:()=>state.user,toast,onChat:renderMessages});
 }
+async function loadPreferences(){
+  if(!state.user)return;
+  const {data}=await supabase.from('jarvis_preferences').select('selected_model').eq('user_id',state.user.id).maybeSingle();
+  if(data?.selected_model){state.model=data.selected_model;$('#model-select').value=state.model;}
+}
 async function start() {
   setupUI();
   if(!configured){$('#auth-screen').hidden=false;$('#setup-warning').hidden=false;return;}
   const {data:{session}}=await supabase.auth.getSession(); state.user=session?.user||null; setAuthView();
   supabase.auth.onAuthStateChange((_event,session)=>{state.user=session?.user||null;setAuthView();if(state.user)loadConversations();});
-  if(state.user) await loadConversations();
+  if(state.user) { await loadPreferences(); await loadConversations(); }
 }
 start();
