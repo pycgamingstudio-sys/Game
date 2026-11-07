@@ -35,6 +35,10 @@ jobs:
       - name: Run project tests when available
         run: npm test --if-present
       - name: Build project
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_CHAT_FUNCTION_URL: ${{ secrets.VITE_CHAT_FUNCTION_URL }}
         run: npm run build
       - uses: actions/upload-artifact@v4
         with:
