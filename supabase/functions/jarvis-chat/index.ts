@@ -70,9 +70,13 @@ Deno.serve(async (req: Request) => {
       }
       contents.push({ role: message.role === "assistant" ? "model" : "user", parts });
     }
+    const {data:preferences}=await supabase.from("jarvis_preferences").select("preferred_language,custom_instructions").eq("user_id",user.id).maybeSingle();
+    const languageInstruction=preferences?.preferred_language==="hi"?" Reply in Hindi.":preferences?.preferred_language==="en"?" Reply in English.":preferences?.preferred_language==="hinglish"?" Reply naturally in Hinglish (Hindi mixed with English).":" Reply in the user's language.";
+    const customInstructions=String(preferences?.custom_instructions||"").slice(0,3000);
+    const systemText="You are JARVIS X, a capable, warm, accurate personal AI assistant. Be honest about limitations and never claim to have performed actions you did not perform."+languageInstruction+(customInstructions?"\\n\\nUser's personal instructions (follow unless unsafe or conflicting with higher-priority rules):\\n"+customInstructions:"");
     const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: "You are JARVIS X, a capable, warm, accurate personal AI assistant. Reply naturally in the user's language. Be honest about limitations and never claim to have performed actions you did not perform." }] }, generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } })
+      body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemText }] }, generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } })
     });
     const result = await upstream.json();
     if (!upstream.ok) return reply({ error: result.error?.message || "AI provider request failed" }, upstream.status);
