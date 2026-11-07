@@ -29,7 +29,10 @@ function persist() {
 function loadLocal() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    state.conversations = Array.isArray(saved.conversations) ? saved.conversations : [];\n    state.projects = Array.isArray(saved.projects) ? saved.projects : [];\n    state.memories = Array.isArray(saved.memories) ? saved.memories : [];\n    state.activity = Array.isArray(saved.activity) ? saved.activity : [];
+    state.conversations = Array.isArray(saved.conversations) ? saved.conversations : [];
+    state.projects = Array.isArray(saved.projects) ? saved.projects : [];
+    state.memories = Array.isArray(saved.memories) ? saved.memories : [];
+    state.activity = Array.isArray(saved.activity) ? saved.activity : [];
   } catch { state.conversations = []; }
   renderConversations();
   if (state.conversations.length) openConversation(state.conversations[0].id);
