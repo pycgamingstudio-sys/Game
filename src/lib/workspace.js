@@ -3,7 +3,7 @@ import { invokeAgent, loadWorkspace } from './agent-client.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function initializeWorkspace({supabase,getUser,toast}) {
+export function initializeWorkspace({supabase,getUser,toast,onChat}) {
   const area=$('#messages');
   const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',memory:'Memory',activity:'Activity',integrations:'Integrations'};
   async function refresh(){return await loadWorkspace(supabase);}
@@ -11,7 +11,7 @@ export function initializeWorkspace({supabase,getUser,toast}) {
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b.dataset.view===view));
     $('.breadcrumb b').textContent=labels[view]||'Workspace';
     $('#sidebar').classList.remove('open');$('#sidebar-backdrop').classList.remove('visible');
-    if(view==='chat'){toast('Chat view selected');return;}
+    if(view==='chat'){onChat?.();return;}
     if(view==='integrations')return renderIntegrations();
     render(view);
   }
