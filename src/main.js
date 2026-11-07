@@ -148,6 +148,7 @@ function resizeComposer() {
 function closeSidebar(){ $('#sidebar').classList.remove('open'); $('#sidebar-backdrop').classList.remove('visible'); }
 function setupUI() {
   $('#new-chat').addEventListener('click',newConversation);
+  window.addEventListener('jarvis:open-conversation',event=>openConversation(event.detail));
   $('#send-button').addEventListener('click',sendMessage);
   $('#composer-input').addEventListener('input',resizeComposer);
   $('#composer-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
