@@ -192,6 +192,45 @@ function renderLocalPage(view) {
     }).catch(()=>{const el=$('#provider-status');if(el)el.textContent='Could not read provider status.';});
     else $('#provider-status').textContent='Add the private connection settings to enable provider status checks.';
   }
+  if (view === 'projects') {
+    area.insertAdjacentHTML('beforeend', `<div class="notice-card repo-create-card">
+      <b>Build a real project with JARVIS X</b>
+      <p>JARVIS first checks whether your brief is clear. If key details are missing, it asks questions. After you review the plan and confirm, it creates a private GitHub repository and generates starter files using Gemini.</p>
+      <label class="repo-field-label" for="scaffold-repo-name">New repository name</label><input id="scaffold-repo-name" class="repo-field" maxlength="100" placeholder="my-awesome-project">
+      <label class="repo-field-label" for="scaffold-goal">What should this project do?</label><textarea id="scaffold-goal" class="repo-field" rows="5" maxlength="7000" placeholder="Describe the app, target devices, main features and preferred technology if you know it."></textarea>
+      <button id="scaffold-plan" class="gold-button">Understand requirements first</button><div id="scaffold-plan-result" class="repo-result" aria-live="polite"></div>
+      <button id="scaffold-confirm" class="gold-button" hidden>Confirm & create private repository</button>
+    </div>`);
+    let approvedBrief='';
+    $('#scaffold-plan').onclick=async()=>{
+      const name=$('#scaffold-repo-name').value.trim(),goal=$('#scaffold-goal').value.trim();
+      if(!name||!goal)return toast('Enter a repository name and project brief.');
+      if(!configured||!supabase)return toast('Connect Supabase and Gemini first.');
+      const button=$('#scaffold-plan'),out=$('#scaffold-plan-result');button.disabled=true;button.textContent='Understanding…';out.textContent='Checking requirements…';$('#scaffold-confirm').hidden=true;approvedBrief='';
+      try{
+        const {data,error}=await supabase.functions.invoke('jarvis-agent',{body:{task:'plan_task',payload:{goal}}});
+        if(error)throw new Error(error.message||'Planning failed.');if(data?.error)throw new Error(data.error);
+        const plan=data.plan,questions=plan.questions||[],steps=plan.steps||[];
+        out.innerHTML='<b>'+escapeHtml(plan.needs_clarification?'JARVIS needs a few details':'Proposed build plan')+'</b><p>'+escapeHtml(plan.summary||'')+'</p>'+(questions.length?'<ol>'+questions.map(q=>'<li>'+escapeHtml(q)+'</li>').join('')+'</ol>':'')+(steps.length?'<ol>'+steps.map(x=>'<li><b>'+escapeHtml(x.title||'Step')+'</b> — '+escapeHtml(x.description||'')+'</li>').join('')+'</ol>':'');
+        if(plan.needs_clarification){out.innerHTML+='<p>Answer these questions in the chat, then return with the clarified brief.</p>';$('#composer-input').value=questions.join('\\n')+'\\n\\n';$('#composer-input').focus();}
+        else{approvedBrief=goal;$('#scaffold-confirm').hidden=false;}
+      }catch(error){out.textContent=error.message;toast(error.message);}
+      finally{button.disabled=false;button.textContent='Understand requirements first';}
+    };
+    $('#scaffold-confirm').onclick=async()=>{
+      if(!approvedBrief)return;
+      const button=$('#scaffold-confirm'),out=$('#scaffold-plan-result'),name=$('#scaffold-repo-name').value.trim();
+      button.disabled=true;button.textContent='Generating files & creating repository…';
+      try{
+        const {data,error}=await supabase.functions.invoke('jarvis-agent',{body:{task:'create_github_project',payload:{name,goal:approvedBrief}}});
+        if(error)throw new Error(error.message||'Project creation failed.');if(data?.error)throw new Error(data.error);
+        state.activity.unshift({id:crypto.randomUUID(),action:'GitHub project created',details:data.repository.full_name,at:new Date().toISOString()});persist();
+        out.innerHTML='<b>Project created successfully</b><p><a href="'+escapeHtml(data.repository.url)+'" target="_blank" rel="noreferrer">'+escapeHtml(data.repository.full_name)+'</a></p><p>'+escapeHtml((data.files||[]).length)+' starter files uploaded.</p><ul>'+(data.files||[]).map(path=>'<li>'+escapeHtml(path)+'</li>').join('')+'</ul>';
+        toast('Private GitHub project created.');
+      }catch(error){out.textContent=error.message;toast(error.message);}
+      finally{button.disabled=false;button.textContent='Confirm & create private repository';}
+    };
+  }
   if (view === 'tools') {
     area.insertAdjacentHTML('beforeend', `<div class="notice-card repo-create-card">
       <b>Plan a task with JARVIS X</b>
