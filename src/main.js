@@ -110,20 +110,27 @@ async function openConversation(id) {
   renderMessages(); closeSidebar();
 }
 async function uploadAttachments() {
-  const uploaded=[];let totalBytes=0;
-  for (const file of state.files) {
-    totalBytes+=file.size;
-    if (file.size > 15*1024*1024 || totalBytes > 15*1024*1024) throw new Error('Keep each message’s attachments under 15 MB total.');
-    const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const storagePath=`${state.user.id}/${crypto.randomUUID()}-${safeName}`;
-    const {error:uploadError}=await supabase.storage.from('jarvis-private').upload(storagePath,file,{contentType:file.type||'application/octet-stream',upsert:false});
-    if(uploadError)throw uploadError;
-    const {data,error}=await supabase.from('jarvis_files').insert({user_id:state.user.id,conversation_id:state.activeId,file_name:file.name,mime_type:file.type,size_bytes:file.size,storage_path:storagePath}).select().single();
-    if(error)throw error;
-    uploaded.push({id:data.id,fileName:file.name,mimeType:file.type,storagePath,size:file.size});
+  const files=state.files;
+  const totalBytes=files.reduce((sum,file)=>sum+file.size,0);
+  if(totalBytes>15*1024*1024)throw new Error('Keep all attachments in one message under 15 MB total.');
+  const uploaded=[];
+  try{
+    for(const file of files){
+      if(file.size>15*1024*1024)throw new Error(file.name+' exceeds the 15 MB limit.');
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const storagePath=`${state.user.id}/${crypto.randomUUID()}-${safeName}`;
+      const {error:uploadError}=await supabase.storage.from('jarvis-private').upload(storagePath,file,{contentType:file.type||'application/octet-stream',upsert:false});
+      if(uploadError)throw uploadError;
+      const {data,error}=await supabase.from('jarvis_files').insert({user_id:state.user.id,conversation_id:state.activeId,file_name:file.name,mime_type:file.type,size_bytes:file.size,storage_path:storagePath}).select().single();
+      if(error){await supabase.storage.from('jarvis-private').remove([storagePath]);throw error;}
+      uploaded.push({id:data.id,fileName:file.name,mimeType:file.type,storagePath,size:file.size});
+    }
+    state.files=[];$('#file-input').value='';$('#attachment-note').hidden=true;$('#attachment-note').textContent='';
+    return uploaded;
+  }catch(error){
+    for(const item of uploaded){await supabase.storage.from('jarvis-private').remove([item.storagePath]);await supabase.from('jarvis_files').delete().eq('id',item.id);}
+    throw error;
   }
-  state.files=[];$('#file-input').value='';$('#attachment-note').hidden=true;$('#attachment-note').textContent='';
-  return uploaded;
 }
 async function sendMessage() {
   const input=$('#composer-input'),typed=input.value.trim();
