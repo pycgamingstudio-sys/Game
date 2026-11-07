@@ -5,7 +5,7 @@ A local-first, single-owner AI workspace. It opens directly without login, signu
 ## Current implementation
 - Direct-open responsive workspace; no account flow.
 - Browser-local conversations, projects, memories and activity history.
-- Gemini 2.5 Flash/Pro chat through a server-side Edge Function.
+- Gemini 3.8 Flash chat with a Gemini 3.1 Pro preview option through a server-side Edge Function.
 - Voice input and read-aloud using supported browser capabilities.
 - Text, CSV, JSON, Markdown, XML and log files; PDF/image data is sent to Gemini inline.
 - Clarify-first AI task planner: asks questions when the brief is incomplete, otherwise produces a structured plan.
