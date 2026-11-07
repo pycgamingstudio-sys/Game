@@ -12,7 +12,7 @@ const supabase = configured ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseKe
 }) : null;
 
 const $ = (selector) => document.querySelector(selector);
-const state = { user: null, conversations: [], activeId: null, messages: [], model: 'gemini-2.5-flash', busy: false, files: [] };
+const state = { user: null, conversations: [], activeId: null, messages: [], model: 'gemini-3.8-flash', busy: false, files: [] };
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
