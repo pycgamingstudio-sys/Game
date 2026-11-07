@@ -174,7 +174,7 @@ function setupUI() {
   $('#voice-button').addEventListener('click',()=>{
     const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SpeechRecognition)return toast('Voice input is not supported in this browser.');
-    const recognition=new SpeechRecognition(); recognition.lang=navigator.language || 'hi-IN'; recognition.interimResults=false;
+    const recognition=new SpeechRecognition(); recognition.lang=state.language==='hi'?'hi-IN':state.language==='en'?'en-IN':state.language==='hinglish'?'hi-IN':(navigator.language||'en-IN'); recognition.interimResults=false;
     recognition.onresult=e=>{ $('#composer-input').value += ( $('#composer-input').value ? ' ' : '')+e.results[0][0].transcript; resizeComposer(); };
     recognition.onerror=()=>toast('Voice input could not start.'); recognition.start();
   });
