@@ -10,9 +10,6 @@ Do not paste secrets into the chat, source code, issue comments or frontend envi
 ## Supabase Edge Function Secrets
 Add these under Supabase Dashboard → Edge Functions → Secrets:
 - GEMINI_API_KEY — required for chat and agent planning.
-- GITHUB_TOKEN — fine-grained GitHub token; restrict it to repositories the agent should manage. Grant only the repository permissions needed for Contents, Pull Requests, Metadata and Actions. Repository creation may require an OAuth/GitHub App flow with repository creation permission.
-- CLOUDFLARE_API_TOKEN — token scoped to Pages/Workers and only the required account resources.
-- CLOUDFLARE_ACCOUNT_ID — target Cloudflare account.
 - SEARCH_API_KEY — selected web-search provider key.
 - IMAGE_PROVIDER_API_KEY — image provider key if using a separate provider.
 - TTS_API_KEY — speech provider key if using a separate provider.
@@ -20,7 +17,7 @@ Add these under Supabase Dashboard → Edge Functions → Secrets:
 - JARVIS_GATEWAY_URL — deployed Cloudflare Worker gateway URL used by the agent after approval.
 
 ## Cloudflare Worker and GitHub Actions secrets
-The Worker deployment workflow reads these GitHub repository Actions secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, JARVIS_OWNER_EMAILS, APP_ORIGIN, GITHUB_TOKEN_JARVIS, GITHUB_OWNER, and GITHUB_REPO. The Worker only accepts users whose verified email is listed in JARVIS_OWNER_EMAILS. The Pages deployment workflow also requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+The Worker deployment workflow reads these GitHub repository Actions secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, JARVIS_OWNER_EMAILS, APP_ORIGIN, GITHUB_TOKEN_JARVIS, GITHUB_OWNER, and GITHUB_REPO. The Worker only accepts users whose verified email is listed in JARVIS_OWNER_EMAILS. The Pages deployment workflow also requires CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, and GITHUB_TOKEN_JARVIS for private source checkout. Give the GitHub token only the permissions required to create repositories, write repository contents, read metadata, and dispatch Actions. A GitHub App is preferred where possible; verify repository-creation support before enabling it. The Cloudflare token should be scoped to Pages: Edit and Workers Scripts: Edit on the intended account.
 
 ## Dashboard configuration (not Edge Function secrets)
 - Supabase Auth → Providers → Google: configure OAuth Client ID and Client Secret.
