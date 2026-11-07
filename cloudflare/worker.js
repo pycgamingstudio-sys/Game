@@ -37,8 +37,7 @@ export default {
     return json({providers:{gemini:Boolean(env.GEMINI_API_KEY),github:Boolean(env.GITHUB_TOKEN),cloudflareDeploy:Boolean(env.GITHUB_TOKEN&&env.GITHUB_OWNER&&env.GITHUB_REPO),supabase:Boolean(env.SUPABASE_URL&&env.SUPABASE_PUBLISHABLE_KEY)}},200,headers);
    }
    if(url.pathname==="/api/github/repositories"&&request.method==="POST"){
-    const body=await request.json();const name=String(body.name||"").trim().toLowerCase().replace(/[^a-z0-9._-]/g,"-").slice(0,80);
-    if(!name)return json({error:"Repository name is required."},400,headers);
+    const body=await request.json();
     const approved=await approval(env,auth,body.approvalId,"github.create_repository");
     const approvedPayload=approved.payload||{};
     const approvedName=String(approvedPayload.name||"").trim().toLowerCase().replace(/[^a-z0-9._-]/g,"-").slice(0,80);
