@@ -34,7 +34,7 @@ async function attachmentPart(supabase: any, userId: string, attachment: any): P
   if (mimeType.startsWith("text/") || ["application/json","text/csv"].includes(mimeType) || /\.(txt|md|csv|json)$/i.test(fileName)) {
     if (bytes.byteLength > 2 * 1024 * 1024) throw new Error(fileName + " is too large for text extraction (2 MB max).");
     const text = new TextDecoder().decode(bytes);
-    return { text: "\n\n[Attached file: " + fileName + "]\n" + text.slice(0, 100000) };
+    return { part:{text: "\n\n[Attached file: " + fileName + "]\n" + text.slice(0, 100000)}, size:bytes.byteLength };
   }
   return { text: "\n\n[Attached file: " + fileName + " — uploaded securely, but this file format is not yet supported for content extraction.]"};
 }
