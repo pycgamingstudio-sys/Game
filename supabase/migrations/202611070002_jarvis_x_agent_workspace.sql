@@ -17,3 +17,11 @@ drop policy if exists "jarvis private files own read" on storage.objects; create
 drop policy if exists "jarvis private files own insert" on storage.objects; create policy "jarvis private files own insert" on storage.objects for insert to authenticated with check(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text);
 drop policy if exists "jarvis private files own update" on storage.objects; create policy "jarvis private files own update" on storage.objects for update to authenticated using(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text) with check(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text);
 drop policy if exists "jarvis private files own delete" on storage.objects; create policy "jarvis private files own delete" on storage.objects for delete to authenticated using(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text);
+
+-- Cover foreign keys flagged by the Supabase performance advisor.
+create index if not exists jarvis_agent_runs_task_id_idx on public.jarvis_agent_runs(task_id);
+create index if not exists jarvis_approvals_task_id_idx on public.jarvis_approvals(task_id);
+create index if not exists jarvis_audit_logs_run_id_idx on public.jarvis_audit_logs(run_id);
+create index if not exists jarvis_files_conversation_id_idx on public.jarvis_files(conversation_id);
+create index if not exists jarvis_files_user_id_idx on public.jarvis_files(user_id);
+create index if not exists jarvis_messages_user_id_idx on public.jarvis_messages(user_id);
