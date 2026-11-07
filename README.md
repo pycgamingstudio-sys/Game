@@ -1,33 +1,39 @@
 # JARVIS X — Private Personal Intelligence
 
-A local-first, single-owner AI workspace. The app opens directly into the workspace: no sign-in, signup, OTP, Google Auth, public launch or subscription flow.
+A local-first, single-owner AI workspace. It opens directly without login, signup, OTP, Google Auth, subscription or public-user accounts.
 
-## Private local mode
-- Chat history is stored in this browser's local storage on this device.
-- Voice input uses browser speech recognition where available; read-aloud uses browser speech synthesis.
-- The UI opens even before any provider API is configured.
-- Do not publish this build to a public URL. The local access key is intended only for a private, single-user local setup.
+## What works in this foundation
+- Local chat sessions and persistent browser history.
+- Gemini chat endpoint with Flash/Pro model selection.
+- Voice input and read-aloud using browser capabilities.
+- Text, CSV, JSON, Markdown, log and XML files; PDF and image payloads are passed to Gemini.
+- Local projects, saved memories and an activity log stored on this device.
+- Clarify-first AI planning: JARVIS asks questions when the brief is incomplete, otherwise returns an ordered plan.
+- Explicitly confirmed GitHub actions: create a private repository, or generate a starter project with Gemini and upload its files to a new private GitHub repository.
+- Provider status screen checks whether server-side secrets are present (not whether all provider permissions/billing are valid).
 
-## Run
+## Local setup
 1. Copy `.env.example` to `.env.local`.
-2. Fill in the Supabase project URL, publishable key and a long random local access key.
-3. Set the same local access key as the Supabase Edge Function secret `JARVIS_LOCAL_ACCESS_KEY`.
-4. Set `GEMINI_API_KEY` and `GITHUB_TOKEN` as Supabase Edge Function secrets when ready.
-5. Install dependencies with `npm install`, then run `npm run dev`.
+2. Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `VITE_JARVIS_LOCAL_ACCESS_KEY`.
+3. Set the matching `JARVIS_LOCAL_ACCESS_KEY` as a Supabase Edge Function secret.
+4. Add `GEMINI_API_KEY` and `GITHUB_TOKEN` as Supabase Edge Function secrets.
+5. Run `npm install`, `npm test`, `npm run build`, then `npm run dev`.
 
-The UI opens directly at the local Vite address. No user account is required.
+## Required server secrets
+- `JARVIS_LOCAL_ACCESS_KEY` — same random value as the local frontend setting.
+- `GEMINI_API_KEY` — Gemini chat, clarification/planning and starter-code generation.
+- `GITHUB_TOKEN` — GitHub repository creation and starter-file upload. Give it only the repository permissions needed for the personal account.
 
-## Current capabilities and staged integrations
-- Local chat sessions and history.
-- Browser speech input and read-aloud.
-- Text/CSV/JSON/Markdown attachments plus PDF/image request payload support.
-- Project, Agent Studio, Memory, Activity and Integrations workspace screens.
-- GitHub private repository creation endpoint and Projects screen action (requires a server-side `GITHUB_TOKEN` with repository creation permission).
-- Planned provider adapters: Gemini, GitHub (repositories, branches, commits, pull requests), Cloudflare, web research, image generation and voice.
-- GitHub and Cloudflare actions must be permission-checked and require explicit approval for writes/deployments.
+Optional future providers (not active features yet): `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SEARCH_API_KEY`, `IMAGE_PROVIDER_API_KEY`, `TTS_API_KEY`, `EMAIL_PROVIDER_API_KEY`.
 
-## Security boundary
-This is a personal local app, not a public multi-user service. Never commit API keys. Keep the local access key out of Git, bind local development to localhost, and do not deploy this frontend publicly: a browser-held local key can be extracted by anyone who can access the app. For remote/private access, add a server-side authenticated gateway first.
+`APP_ORIGIN` defaults to `http://localhost:5173`. If the local origin changes, set the exact origin as a server-side secret.
 
-## Honest status
-The interface and local-first conversation foundation are being built before provider credentials are added. A feature shown in the workspace is not considered operational until its provider adapter, permission checks and end-to-end tests are implemented.
+## Privacy and security
+- No user login or account is created. Chat, project and memory data are stored in this browser's local storage and do not sync to another device.
+- Never commit actual keys. Never put Gemini or GitHub credentials in any `VITE_` variable.
+- The local access key is necessarily present in the local frontend bundle. Do not publish this frontend or expose it to other people. This is a single-user local setup, not a secure public service. Remote access requires a server-side authenticated gateway.
+- GitHub project generation creates a private repository only after the user presses the explicit confirmation button. The AI planner itself does not execute actions.
+- Provider secret presence is not proof of account permissions, API scopes, billing or successful live operation.
+
+## Current boundaries
+Cloudflare deployment, general-purpose web search, image generation, long-term cross-device memory, arbitrary repository editing after initial scaffold, and autonomous multi-step tool execution are not yet implemented. They must not be presented as working until their provider adapters and end-to-end tests are added.
