@@ -139,6 +139,6 @@ Deno.serve(async(req:Request)=>{
    await supabase.from("jarvis_audit_logs").insert({user_id:user.id,run_id:run.id,action:"agent.plan_created",details:{goal,availableProviders:available}});
    return json({run,summary:plan.summary,steps:plan.steps,availableProviders:available,message:"AI execution plan created. No external action has been run yet."});
   }
-  return json({error:"Unknown agent task.",supported:["capabilities","create_project","create_task","request_approval","decide_approval","run_agent"]},400);
+  return json({error:"Unknown agent task.",supported:["capabilities","plan_task","create_github_repository","create_github_project","create_project","create_task","request_approval","decide_approval","run_agent"]},400);
  }catch(error){return json({error:error instanceof Error?error.message:"Unexpected agent error"},500);}
 });
