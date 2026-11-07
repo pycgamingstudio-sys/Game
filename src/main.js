@@ -71,14 +71,21 @@ function renderMessages() {
   area.querySelectorAll('.copy-message').forEach((button,index) => button.addEventListener('click', () => {
     const msg = state.messages.filter(m => m.role === 'assistant')[index]; navigator.clipboard?.writeText(msg?.content || ''); toast('Copied to clipboard');
   }));
-  area.querySelectorAll('.speak-message').forEach((button,index) => button.addEventListener('click', () => {
+  area.querySelectorAll('.speak-message').forEach((button,index) => button.addEventListener('click', async() => {
     const msg = state.messages.filter(m => m.role === 'assistant')[index];
-    if (!('speechSynthesis' in window)) return toast('Read aloud is not supported in this browser.');
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(msg?.content || '');
-    utterance.lang = navigator.language || 'hi-IN';
-    utterance.rate = 1;
-    window.speechSynthesis.speak(utterance);
+    if (!msg?.content) return;
+    button.disabled=true;
+    try {
+      const {data,error}=await supabase.functions.invoke('jarvis-tts',{body:{text:msg.content,voice:'Kore'}});
+      if(error)throw new Error(error.message||'Speech generation failed.');
+      if(data?.error)throw new Error(data.error);
+      const audio=new Audio(data.audioUrl);await audio.play();
+    } catch(error) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance=new SpeechSynthesisUtterance(msg.content);utterance.lang=navigator.language||'hi-IN';utterance.rate=1;window.speechSynthesis.speak(utterance);
+      } else toast(error.message);
+    } finally {button.disabled=false;}
   }));
   area.scrollTop = area.scrollHeight;
 }
