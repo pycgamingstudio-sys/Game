@@ -1,36 +1,47 @@
-# NEON HORIZON
+# JARVIS X — Personal Intelligence
 
-A browser-based 3D night-drive prototype built with Three.js, Vite and cannon-es.
+A light-first personal AI workspace with a pearl, ivory and champagne visual system. The canonical app is the Vite project at the repository root.
 
-## Requirements
-- Node.js 22 or newer
-- npm
+## Implemented in this branch
+- Responsive chat UI and installable PWA shell.
+- Google OAuth flow with a database-backed email allowlist.
+- Supabase conversation history, model selection, search and custom instructions.
+- Optional automatic memory extraction (off until enabled in Settings).
+- Private file library; image, PDF and plain-text/CSV/JSON analysis.
+- Gemini image generation and natural text-to-speech.
+- Browser speech input with language preference.
+- Tavily web research with source links.
+- Projects, memories, tasks, agent runs and approval queue.
+- Agent planning for generated starter projects, approval-gated GitHub repository creation and Cloudflare Pages deployment.
+- Supabase RLS, private Storage policies and JWT-verified Edge Functions.
+
+See [the feature matrix](docs/FEATURE-MATRIX.md) for limitations and features not yet at full ChatGPT parity.
 
 ## Local development
-```bash
-npm install
-npm run dev
-```
+1. Copy `.env.example` to `.env`.
+2. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+3. Run `npm install`, then `npm run dev`.
+4. Run `npm test` and `npm run build`.
 
-## Production build
-```bash
-npm run build
-npm run preview
-```
+## Supabase setup
+- Project ref: `tmlrveloeirxsankeqrs` (Driver saathi; Plivex is not used).
+- Migrations: `supabase/migrations`.
+- Edge Functions: `jarvis-chat`, `jarvis-agent`, `jarvis-research`, `jarvis-image`, `jarvis-tts`.
+- Configure Google OAuth under Supabase Auth → Providers and set allowed redirect URLs.
+- Add approved Gmail addresses to `public.jarvis_allowed_users` using the SQL example in [Provider setup](docs/PROVIDER-SETUP.md). The allowlist is empty by default.
+- Keep all server-side keys in the correct provider's secrets store.
 
-The production site is generated in dist/.
+## Credentials by location
+- Supabase Edge Function Secrets: `GEMINI_API_KEY`, `TAVILY_API_KEY`, `JARVIS_GATEWAY_URL`, and optional `APP_ORIGIN`.
+- GitHub Actions Secrets: `GITHUB_TOKEN_JARVIS`, `GITHUB_OWNER`, `GITHUB_REPO`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `JARVIS_OWNER_EMAILS`, `APP_ORIGIN`, and the `VITE_*` frontend build variables.
+- Google OAuth: configure the Client ID and Client Secret in Supabase Auth provider settings.
+- Never use a Supabase service-role or secret key in a `VITE_*` variable or browser code.
 
-## Deployment
-- Vercel: Framework preset Vite, build command `npm run build`, output directory `dist`.
-- Netlify: build command `npm run build`, publish directory `dist`.
+## Safety model
+- User data is isolated with RLS and an email allowlist.
+- Repository creation and deployment require explicit approval.
+- The gateway verifies the signed-in user and the approved action payload before performing side effects.
+- Provider keys are never stored in Git history or chat.
 
-## Controls
-- A / D or Left / Right: steer
-- W / Up: accelerate
-- S / Down: brake
-- Space / Shift: nitro
-- Escape: pause
-- Touch: drag left/right to steer; on-screen pedals on touch devices
-
-## Notes
-The vehicle simulation uses a rigid chassis and raycast suspension. It is not a soft-body deformation simulator and does not claim BeamNG.drive parity. Third-party model and texture assets should only be added after their licenses are checked.
+## Current status
+This is a working foundation in the `jarvis-x-foundation` branch with CI passing. Provider credentials, OAuth configuration, end-to-end tests and Cloudflare deployment are still required before the live app can be used. This project does not claim full ChatGPT feature parity yet.

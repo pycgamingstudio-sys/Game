@@ -1,13 +1,11 @@
-name: Production build and browser smoke tests
-
+name: JARVIS X build and tests
 on:
   push:
-    branches: [main]
+    branches: [main, jarvis-x-foundation]
   pull_request:
     branches: [main]
-
 jobs:
-  build-and-test:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,6 +13,6 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - run: node --check cloudflare/worker.js
       - run: npm run build
-      - run: npm run test:e2e

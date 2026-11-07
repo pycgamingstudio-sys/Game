@@ -1,0 +1,30 @@
+-- Schema deployed to Supabase project tmlrveloeirxsankeqrs
+-- This file mirrors the jarvis_x_core_schema migration.
+create extension if not exists pgcrypto;
+create table if not exists public.jarvis_conversations (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, title text not null default 'New chat', model text not null default 'gemini-2.5-flash', archived boolean not null default false, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table if not exists public.jarvis_messages (id uuid primary key default gen_random_uuid(), conversation_id uuid not null references public.jarvis_conversations(id) on delete cascade, user_id uuid not null references auth.users(id) on delete cascade, role text not null check (role in ('user','assistant','system','tool')), content text not null, attachments jsonb not null default '[]'::jsonb, model text, created_at timestamptz not null default now());
+create table if not exists public.jarvis_memories (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, content text not null, category text not null default 'general', source text not null default 'user', created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table if not exists public.jarvis_preferences (user_id uuid primary key references auth.users(id) on delete cascade, display_name text, preferred_language text not null default 'auto', selected_model text not null default 'gemini-2.5-flash', settings jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now());
+create table if not exists public.jarvis_files (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, conversation_id uuid references public.jarvis_conversations(id) on delete set null, file_name text not null, mime_type text, storage_path text, size_bytes bigint, extracted_text text, created_at timestamptz not null default now());
+create table if not exists public.jarvis_tasks (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, title text not null, description text, status text not null default 'queued' check (status in ('queued','running','waiting_approval','completed','failed','cancelled')), schedule_at timestamptz, result jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table if not exists public.jarvis_approvals (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, task_id uuid references public.jarvis_tasks(id) on delete cascade, action text not null, payload jsonb not null default '{}'::jsonb, status text not null default 'pending' check (status in ('pending','approved','rejected','expired')), created_at timestamptz not null default now(), decided_at timestamptz);
+create index if not exists jarvis_conversations_user_updated_idx on public.jarvis_conversations(user_id, updated_at desc);
+create index if not exists jarvis_messages_conversation_created_idx on public.jarvis_messages(conversation_id, created_at);
+create index if not exists jarvis_memories_user_created_idx on public.jarvis_memories(user_id, created_at desc);
+create index if not exists jarvis_tasks_user_status_idx on public.jarvis_tasks(user_id, status, created_at desc);
+create index if not exists jarvis_approvals_user_status_idx on public.jarvis_approvals(user_id, status, created_at desc);
+alter table public.jarvis_conversations enable row level security;
+alter table public.jarvis_messages enable row level security;
+alter table public.jarvis_memories enable row level security;
+alter table public.jarvis_preferences enable row level security;
+alter table public.jarvis_files enable row level security;
+alter table public.jarvis_tasks enable row level security;
+alter table public.jarvis_approvals enable row level security;
+create policy "jarvis conversations own" on public.jarvis_conversations for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "jarvis messages own" on public.jarvis_messages for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "jarvis memories own" on public.jarvis_memories for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "jarvis preferences own" on public.jarvis_preferences for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "jarvis files own" on public.jarvis_files for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "jarvis tasks own" on public.jarvis_tasks for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "jarvis approvals own" on public.jarvis_approvals for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+grant select, insert, update, delete on public.jarvis_conversations, public.jarvis_messages, public.jarvis_memories, public.jarvis_preferences, public.jarvis_files, public.jarvis_tasks, public.jarvis_approvals to authenticated;

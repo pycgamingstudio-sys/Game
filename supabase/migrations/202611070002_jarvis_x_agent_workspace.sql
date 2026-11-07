@@ -1,0 +1,27 @@
+create table if not exists public.jarvis_projects (id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,name text not null,description text,project_type text not null default 'general',status text not null default 'active' check(status in ('active','archived','paused')),repository_url text,deployment_url text,metadata jsonb not null default '{}'::jsonb,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create table if not exists public.jarvis_agent_runs (id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,task_id uuid references public.jarvis_tasks(id) on delete set null,goal text not null,status text not null default 'queued' check(status in ('queued','planning','waiting_approval','running','completed','failed','cancelled')),plan jsonb not null default '[]'::jsonb,result jsonb not null default '{}'::jsonb,error text,started_at timestamptz,finished_at timestamptz,created_at timestamptz not null default now());
+create table if not exists public.jarvis_audit_logs (id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,run_id uuid references public.jarvis_agent_runs(id) on delete set null,action text not null,target text,status text not null default 'recorded',details jsonb not null default '{}'::jsonb,created_at timestamptz not null default now());
+create table if not exists public.jarvis_connector_status (id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,provider text not null,connected boolean not null default false,metadata jsonb not null default '{}'::jsonb,checked_at timestamptz,unique(user_id,provider));
+create index if not exists jarvis_projects_user_updated_idx on public.jarvis_projects(user_id,updated_at desc);
+create index if not exists jarvis_runs_user_created_idx on public.jarvis_agent_runs(user_id,created_at desc);
+create index if not exists jarvis_audit_user_created_idx on public.jarvis_audit_logs(user_id,created_at desc);
+create index if not exists jarvis_connector_user_idx on public.jarvis_connector_status(user_id,provider);
+alter table public.jarvis_projects enable row level security; alter table public.jarvis_agent_runs enable row level security; alter table public.jarvis_audit_logs enable row level security; alter table public.jarvis_connector_status enable row level security;
+create policy "jarvis projects own" on public.jarvis_projects for all to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
+create policy "jarvis agent runs own" on public.jarvis_agent_runs for all to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
+create policy "jarvis audit logs own" on public.jarvis_audit_logs for all to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
+create policy "jarvis connector status own" on public.jarvis_connector_status for all to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
+grant select,insert,update,delete on public.jarvis_projects,public.jarvis_agent_runs,public.jarvis_audit_logs,public.jarvis_connector_status to authenticated;
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('jarvis-private','jarvis-private',false,52428800,array['image/*','application/pdf','text/plain','text/markdown','application/json','text/csv','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']) on conflict(id) do nothing;
+drop policy if exists "jarvis private files own read" on storage.objects; create policy "jarvis private files own read" on storage.objects for select to authenticated using(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text);
+drop policy if exists "jarvis private files own insert" on storage.objects; create policy "jarvis private files own insert" on storage.objects for insert to authenticated with check(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text);
+drop policy if exists "jarvis private files own update" on storage.objects; create policy "jarvis private files own update" on storage.objects for update to authenticated using(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text) with check(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text);
+drop policy if exists "jarvis private files own delete" on storage.objects; create policy "jarvis private files own delete" on storage.objects for delete to authenticated using(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text);
+
+-- Cover foreign keys flagged by the Supabase performance advisor.
+create index if not exists jarvis_agent_runs_task_id_idx on public.jarvis_agent_runs(task_id);
+create index if not exists jarvis_approvals_task_id_idx on public.jarvis_approvals(task_id);
+create index if not exists jarvis_audit_logs_run_id_idx on public.jarvis_audit_logs(run_id);
+create index if not exists jarvis_files_conversation_id_idx on public.jarvis_files(conversation_id);
+create index if not exists jarvis_files_user_id_idx on public.jarvis_files(user_id);
+create index if not exists jarvis_messages_user_id_idx on public.jarvis_messages(user_id);

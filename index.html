@@ -3,56 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#05060b">
-  <meta name="description" content="NEON HORIZON — a cinematic 3D night-drive experience.">
-  <title>NEON HORIZON — Night Drive</title>
-  <link rel="stylesheet" href="/style.css">
+  <meta name="theme-color" content="#f7f4ed">
+  <meta name="description" content="JARVIS X — your personal intelligence workspace.">
+  <title>JARVIS X — Personal Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/jarvis-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div id="game-root">
-    <div id="canvas-container" aria-label="NEON HORIZON 3D game"></div>
-    <div class="vignette"></div>
-    <header class="topbar">
-      <a class="brand" href="#" aria-label="Neon Horizon home"><span class="brand-symbol">◈</span><span>NEON <b>HORIZON</b><small>NIGHT DRIVE SIMULATOR</small></span></a>
-      <div class="top-actions"><label class="quality-label" for="quality-select">GRAPHICS</label><select id="quality-select" aria-label="Graphics quality"><option value="ultra">ULTRA</option><option value="high">HIGH</option><option value="balanced">BALANCED</option><option value="performance">PERFORMANCE</option></select></div>
-    </header>
-    <main id="main-menu" class="screen active">
-      <div class="menu-copy">
-        <p class="eyebrow">THE CITY NEVER SLEEPS</p>
-        <h1>OWN THE<br><span>NIGHT.</span></h1>
-        <p class="tagline">One road. Endless neon. Take the wheel.</p>
-        <button id="start-button" class="action primary">START ENGINE <span>↗</span></button>
-        <button id="garage-button" class="action secondary">CHANGE VEHICLE FINISH</button>
-        <p id="garage-note" class="micro-note">OBSIDIAN // ACTIVE FINISH</p>
+  <section id="auth-screen" class="auth-screen" hidden>
+    <div class="auth-card"><div class="brand-mark">✳</div><p class="eyebrow">PERSONAL INTELLIGENCE</p><h1>Meet your new<br><em>thinking partner.</em></h1><p class="auth-copy">A considered space for ideas, answers, research and everything you want to create.</p>
+      <button id="auth-google" class="google-button"><span class="google-g">G</span> Continue with Google</button>
+      <p id="setup-warning" class="setup-warning" hidden>Connect the Supabase project settings to activate sign-in.</p>
+      <small class="auth-foot">PRIVATE BY DESIGN · JARVIS X</small>
+    </div><div class="auth-side-note">A calmer way to think, create and get things done.</div>
+  </section>
+  <div id="app-shell" class="app-shell" hidden>
+    <aside id="sidebar" class="sidebar">
+      <a class="brand" href="#"><span class="brand-mark small">✳</span><span>JARVIS <b>X</b><small>PERSONAL INTELLIGENCE</small></span></a>
+      <button id="new-chat" class="new-chat"><span>＋</span> New chat <kbd>⌘ K</kbd></button>
+      <nav class="primary-nav">
+        <button class="nav-item selected" data-view="chat"><span>▤</span> Chats</button>
+        <button class="nav-item" data-view="search"><span>⌕</span> Search chats</button>
+        <button class="nav-item" data-view="projects"><span>◇</span> Projects</button>
+        <button class="nav-item" data-view="tools"><span>✧</span> Agent studio</button>
+        <button class="nav-item" data-view="research"><span>⌕</span> Research</button>
+        <button class="nav-item" data-view="images"><span>▧</span> Image studio</button>
+        <button class="nav-item" data-view="files"><span>▤</span> Files</button>
+        <button class="nav-item" data-view="memory"><span>⌑</span> Memory</button>
+        <button class="nav-item" data-view="activity"><span>◷</span> Activity & approvals</button>
+        <button class="nav-item" data-view="integrations"><span>⌘</span> Integrations</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Settings</button>
+      </nav>
+      <div class="history-heading">RECENT</div><div id="history-list" class="history-list"></div>
+      <div class="sidebar-bottom"><div class="plan-card"><span class="plan-icon">✧</span><div><b>Your workspace</b><small>Personal · Private</small></div><span class="plan-dot"></span></div>
+        <div class="profile-row"><div id="profile-avatar" class="avatar">J</div><div class="profile-meta"><b id="profile-name">Account</b><small id="profile-email"></small></div><button id="signout-button" class="icon-button" title="Sign out">↗</button></div>
       </div>
-      <div class="menu-bottom"><span>NEON HORIZON / BUILD 02</span><span>WEB 3D EXPERIENCE</span></div>
+    </aside>
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+    <main class="main-panel">
+      <header class="topbar"><button id="menu-button" class="icon-button menu-toggle" aria-label="Open menu">☰</button><div class="breadcrumb">Workspace <span>/</span> <b>New conversation</b></div><div class="topbar-right"><span id="theme-note" class="theme-note"></span><select id="model-select" aria-label="Choose model"><option value="gemini-3.8-flash">Gemini 3.8 Flash</option><option value="gemini-3.7-flash">Gemini 3.7 Flash</option></select><button id="settings-button" class="icon-button settings-button" title="Integrations and settings">⚙</button></div></header>
+      <section id="messages" class="messages"><div class="welcome"><div class="welcome-mark"><span>✳</span></div><p class="welcome-kicker">YOUR PERSONAL INTELLIGENCE</p><h1>What can I help<br><em>you with today?</em></h1></div></section>
+      <footer class="composer-wrap"><div class="composer-shell"><div id="attachment-note" class="attachment-note" hidden></div><textarea id="composer-input" rows="1" placeholder="Message Jarvis X..." aria-label="Message Jarvis X"></textarea><div class="composer-actions"><div class="composer-left"><button id="attach-button" class="tool-button" title="Attach files">＋ <span>Attach</span></button><input id="file-input" type="file" multiple hidden accept="image/*,.pdf,.txt,.md,.docx,.csv,.xlsx,.json"><button id="voice-button" class="tool-button" title="Voice input">♩ <span>Voice</span></button></div><div class="composer-right"><span class="composer-hint">Shift + Enter for new line</span><button id="send-button" class="send-button" aria-label="Send message">↑</button></div></div></div><p class="disclaimer">Jarvis X can make mistakes. Verify important information.</p></footer>
     </main>
-    <section id="hud" class="hud hidden" aria-live="polite">
-      <div class="metric"><small>SPEED</small><strong><span id="speed-value">000</span><em> KM/H</em></strong></div>
-      <div class="metric distance"><small>DISTANCE</small><strong id="distance-value">00000 <em>M</em></strong><small id="score-value">SCORE 000000</small></div>
-      <button id="pause-button" class="pause-button" aria-label="Pause">Ⅱ</button>
-      <div class="drive-bottom">
-        <div class="nitro-head"><span>NITRO</span><b id="nitro-value">100%</b></div>
-        <div class="nitro-bar"><i id="nitro-fill"></i></div>
-        <small class="desktop-help">W / ↑ ACCELERATE · A D / ← → STEER · SPACE NITRO · S BRAKE</small>
-      </div>
-      <div class="mobile-controls">
-        <button id="brake-button" class="pedal">BRAKE</button>
-        <button id="boost-button" class="pedal boost">NITRO</button>
-      </div>
-    </section>
-    <section id="pause-screen" class="screen modal hidden">
-      <div class="panel"><p class="eyebrow">DRIVE SUSPENDED</p><h2>PAUSED</h2><button id="resume-button" class="action primary">RESUME DRIVE</button><button id="quit-button" class="action secondary">MAIN MENU</button></div>
-    </section>
-    <section id="game-over-screen" class="screen modal hidden">
-      <div class="panel"><p class="eyebrow">RUN COMPLETE</p><h2>RUN ENDED</h2><div class="results"><small>DISTANCE</small><strong id="final-distance">0 M</strong><small>SCORE</small><strong id="final-score">0</strong></div><button id="play-again-button" class="action primary">DRIVE AGAIN ↗</button><button id="menu-button" class="action secondary">MAIN MENU</button></div>
-    </section>
-    <div id="loading-screen"><div class="loader-mark">◈</div><h2>NEON <b>HORIZON</b></h2><p>BUILDING THE NIGHT CITY</p><div class="load-track"><i id="load-progress"></i></div><small id="load-label">INITIALIZING GRAPHICS</small></div>
-    <div id="toast" role="status"></div>
   </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+    }
+  </script>
   <script type="module" src="/src/main.js"></script>
-</body>
-</html>
+</body></html>

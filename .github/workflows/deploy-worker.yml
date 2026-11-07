@@ -1,0 +1,39 @@
+name: Deploy JARVIS X gateway Worker
+on:
+  workflow_dispatch:
+jobs:
+  deploy-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jarvis-x-foundation
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Wrangler
+        run: npm install --global wrangler
+      - name: Configure Worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          JARVIS_OWNER_EMAILS: ${{ secrets.JARVIS_OWNER_EMAILS }}
+          APP_ORIGIN: ${{ secrets.APP_ORIGIN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_JARVIS }}
+          GITHUB_OWNER: ${{ secrets.GITHUB_OWNER }}
+          GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
+          CLOUDFLARE_PAGES_READY: 'true'
+        run: |
+          set -euo pipefail
+          for key in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY JARVIS_OWNER_EMAILS APP_ORIGIN GITHUB_TOKEN GITHUB_OWNER GITHUB_REPO CLOUDFLARE_PAGES_READY; do
+            value="${!key}"
+            if [ -z "$value" ]; then echo "Missing required secret: $key"; exit 1; fi
+            printf '%s' "$value" | wrangler secret put "$key" --config cloudflare/wrangler.toml
+          done
+      - name: Deploy Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler deploy --config cloudflare/wrangler.toml

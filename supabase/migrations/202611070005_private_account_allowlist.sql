@@ -1,0 +1,42 @@
+create table if not exists public.jarvis_allowed_users (email text primary key, enabled boolean not null default true, created_at timestamptz not null default now());
+alter table public.jarvis_allowed_users enable row level security;
+revoke all on table public.jarvis_allowed_users from anon, authenticated;
+create policy "jarvis allowed users self read" on public.jarvis_allowed_users for select to authenticated using (lower(email)=lower(coalesce(auth.jwt()->>'email','')));
+grant select on public.jarvis_allowed_users to authenticated;
+create or replace function public.is_jarvis_allowed_user() returns boolean language sql stable security invoker set search_path = '' as $
+  select exists(select 1 from public.jarvis_allowed_users allowed where lower(allowed.email)=lower(coalesce(auth.jwt()->>'email','')) and allowed.enabled=true);
+$$;
+revoke all on function public.is_jarvis_allowed_user() from public, anon;
+grant execute on function public.is_jarvis_allowed_user() to authenticated;
+
+drop policy if exists "jarvis conversations own" on public.jarvis_conversations;
+create policy "jarvis conversations own" on public.jarvis_conversations for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis messages own" on public.jarvis_messages;
+create policy "jarvis messages own" on public.jarvis_messages for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis memories own" on public.jarvis_memories;
+create policy "jarvis memories own" on public.jarvis_memories for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis preferences own" on public.jarvis_preferences;
+create policy "jarvis preferences own" on public.jarvis_preferences for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis files own" on public.jarvis_files;
+create policy "jarvis files own" on public.jarvis_files for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis tasks own" on public.jarvis_tasks;
+create policy "jarvis tasks own" on public.jarvis_tasks for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis approvals own" on public.jarvis_approvals;
+create policy "jarvis approvals own" on public.jarvis_approvals for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis projects own" on public.jarvis_projects;
+create policy "jarvis projects own" on public.jarvis_projects for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis agent runs own" on public.jarvis_agent_runs;
+create policy "jarvis agent runs own" on public.jarvis_agent_runs for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis audit logs own" on public.jarvis_audit_logs;
+create policy "jarvis audit logs own" on public.jarvis_audit_logs for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis connector status own" on public.jarvis_connector_status;
+create policy "jarvis connector status own" on public.jarvis_connector_status for all to authenticated using ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user())) with check ((select auth.uid())=user_id and (select public.is_jarvis_allowed_user()));
+
+drop policy if exists "jarvis private files own read" on storage.objects;
+create policy "jarvis private files own read" on storage.objects for select to authenticated using(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis private files own insert" on storage.objects;
+create policy "jarvis private files own insert" on storage.objects for insert to authenticated with check(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis private files own update" on storage.objects;
+create policy "jarvis private files own update" on storage.objects for update to authenticated using(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text and (select public.is_jarvis_allowed_user())) with check(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text and (select public.is_jarvis_allowed_user()));
+drop policy if exists "jarvis private files own delete" on storage.objects;
+create policy "jarvis private files own delete" on storage.objects for delete to authenticated using(bucket_id='jarvis-private' and (storage.foldername(name))[1]=(select auth.uid())::text and (select public.is_jarvis_allowed_user()));
