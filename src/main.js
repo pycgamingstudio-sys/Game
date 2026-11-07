@@ -117,7 +117,7 @@ async function sendMessage() {
   catch(error) { state.busy=false; $('#send-button').disabled=false; toast(error.message); return; }
   const attachmentNames=attachments.map(a=>a.name);
   const visibleText=content || ('Please inspect these attached files: '+attachmentNames.join(', '));
-  state.messages.push({role:'user',content:visibleText+(attachmentNames.length?'\n\nAttached: '+attachmentNames.join(', '):'')});
+  state.messages.push({role:'user',content:visibleText+(attachmentNames.length?'\n\nAttached: '+attachmentNames.join(', '):'')});\n  state.activity.unshift({id:crypto.randomUUID(),action:'Conversation message',details:visibleText.slice(0,120),at:new Date().toISOString()}); state.activity=state.activity.slice(0,100);
   renderMessages(); const item=currentConversation(); item.messages=state.messages; item.updatedAt=new Date().toISOString();
   if (item.title==='New chat') item.title=visibleText.slice(0,48) || 'File analysis';
   persist(); renderConversations();
@@ -144,7 +144,7 @@ function renderLocalPage(view) {
   const pages={
     projects:['Projects','Keep your websites, apps, repositories and ideas organised.','Project records will be stored locally. GitHub repository creation becomes active when you add a GitHub token in the private server configuration.'],
     tools:['Agent studio','Describe the outcome. JARVIS X will plan the work, ask clarifying questions and request approval for important actions.','The execution engine and connected tools are being built in stages. No external action is claimed until it is actually completed.'],
-    memory:['Memory','A private place for details you want JARVIS X to remember.','Long-term searchable memory will be connected to the local workspace store.'],
+    memory:['Memory','A private place for details you want JARVIS X to remember.','Save, review and delete personal notes stored in this browser on this device.'],
     activity:['Activity & approvals','Review proposed actions before changes are made.','High-impact actions such as repository writes, deployments and deletion must require your approval.'],
     integrations:['Integrations','Connect providers later without rebuilding the app.','Gemini · GitHub · Cloudflare · Supabase · Web search · Voice · Image generation']
   };
