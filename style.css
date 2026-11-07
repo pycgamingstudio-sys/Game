@@ -12,3 +12,5 @@
 @media(max-width:800px){.page-view{padding:8px 2px 40px}.page-heading{align-items:flex-start;flex-direction:column}.page-heading h2{font-size:34px}.agent-launch{align-items:flex-start;padding:15px;gap:11px}.agent-orb{width:40px;height:40px;flex-basis:40px}.agent-input .gold-button{align-self:stretch}.list-card{align-items:flex-start}.approval-actions{flex-shrink:0}.integration-grid{grid-template-columns:1fr}.workspace-grid,.capability-grid{grid-template-columns:1fr}}
 
 .message-attachments{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.message-attachments span{border:1px solid #e8e1d5;background:#f5f1e8;border-radius:7px;padding:5px 8px;color:#88785c;font-size:9px;max-width:100%;overflow-wrap:anywhere}
+
+.plan-card{margin:0 0 24px;padding:17px 19px;background:#f6f1e7;border:1px solid #e8deca;border-radius:13px}.plan-card>b{display:block;color:#62543b;font:600 17px 'Playfair Display',serif}.plan-card ol{padding-left:20px;margin:12px 0 0}.plan-card li{padding:5px 0;color:#8e7a56;font-size:11px}.plan-card li strong{color:#5e584c}.plan-card li small{display:block;margin-top:4px;color:#969083;font-size:10px}
