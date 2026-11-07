@@ -26,8 +26,20 @@ The Worker deployment workflow reads these GitHub repository Actions secrets: CL
 - Google Cloud Console: add the Supabase OAuth callback URL to authorized redirect URIs.
 - Supabase project URL and publishable key are frontend build-time environment variables.
 - Enable the Data API for the app and verify the public schema is exposed if the frontend uses supabase-js table queries. The SQL migrations grant only authenticated access and enable owner-scoped RLS on each application table.
-- Enable leaked-password protection in Supabase Auth security settings.
+- Enable leaked-password protection in Supabase Auth security settings (the current Supabase security advisor flags this as disabled).
 - Configure allowed redirect URLs for local development and the deployed app.
+
+## Private account allowlist
+The database starts with no allowed emails, so no Google account can access JARVIS data until you add your approved accounts. In Supabase SQL Editor, run this after replacing the examples with your own Gmail addresses:
+
+```sql
+insert into public.jarvis_allowed_users(email) values
+  ('primary@gmail.com'),
+  ('second-account@gmail.com')
+on conflict (email) do update set enabled = true;
+```
+
+Add the same comma-separated addresses to the GitHub Actions secret JARVIS_OWNER_EMAILS. The app checks the database allowlist at sign-in, and the Cloudflare gateway separately checks JARVIS_OWNER_EMAILS before GitHub or deployment actions.
 
 ## OAuth permissions
 Start with Google sign-in only. Gmail access must be separately consented and should request read-only scopes first. Draft/send permissions must be added only when those features are implemented and must always use an explicit send approval.
