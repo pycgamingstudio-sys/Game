@@ -6,7 +6,7 @@ const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 export function initializeWorkspace({supabase,getUser,toast,onChat}) {
   const area=$('#messages');
   let lastPlan=null;
-  const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',research:'Research',images:'Image studio',memory:'Memory',activity:'Activity',integrations:'Integrations',settings:'Settings'};
+  const labels={chat:'Chats',search:'Search chats',projects:'Projects',tools:'Agent studio',research:'Research',images:'Image studio',memory:'Memory',activity:'Activity',integrations:'Integrations',settings:'Settings'};
   async function refresh(){return await loadWorkspace(supabase);}
   function activate(view){
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b.dataset.view===view));
@@ -14,6 +14,7 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
     $('#sidebar').classList.remove('open');$('#sidebar-backdrop').classList.remove('visible');
     if(view==='chat'){onChat?.();return;}
     if(view==='integrations')return renderIntegrations();
+    if(view==='search')return renderSearch();
     if(view==='research')return renderResearch();
     if(view==='images')return renderImageStudio();
     if(view==='settings')return renderSettings();
@@ -36,6 +37,22 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
       area.querySelectorAll('[data-decision]').forEach(b=>b.onclick=async()=>{try{const result=await invokeAgent(supabase,'decide_approval',{approvalId:b.dataset.id,decision:b.dataset.decision});const url=result.execution?.repository?.url||result.execution?.deploymentUrl;toast(url?(result.execution?.status==='queued'?`Deployment queued: ${url}`:`Repository created: ${url}`):(result.message||'Approval updated.'));render(view);}catch(e){toast(e.message);}});
       area.querySelectorAll('[data-execute]').forEach(b=>b.onclick=async()=>{try{const result=await invokeAgent(supabase,'execute_approved',{approvalId:b.dataset.execute});const url=result.execution?.repository?.url||result.execution?.deploymentUrl;toast(url?(result.execution?.status==='queued'?`Deployment queued: ${url}`:`Repository created: ${url}`):(result.execution?.message||'Execution submitted.'));render(view);}catch(e){toast(e.message);}});
     }
+  }
+  async function renderSearch(){
+    area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">YOUR CONVERSATION ARCHIVE</p><h2>Search chats</h2><p>Find a previous conversation by words or phrases.</p></div></div><div class="research-launch"><input id="chat-search-query" placeholder="Search your conversations…" autocomplete="off"><button class="gold-button" id="run-chat-search">Search history ↗</button></div><div id="chat-search-results" class="workspace-list"></div></div>`;
+    const run=async()=>{
+      const query=$('#chat-search-query').value.trim();if(query.length<2)return toast('Enter at least two characters.');
+      const button=$('#run-chat-search');button.disabled=true;button.textContent='Searching…';
+      try{
+        const {data,error}=await supabase.from('jarvis_messages').select('id,conversation_id,content,created_at').ilike('content','%'+query.replace(/[%_]/g,'\\  async function renderSettings(){')+'%').order('created_at',{ascending:false}).limit(30);
+        if(error)throw error;
+        $('#chat-search-results').innerHTML=(data||[]).map(item=>`<button class="search-result" data-conversation="${item.conversation_id}"><b>${esc(item.content.slice(0,180))}</b><small>${new Date(item.created_at).toLocaleString()}</small></button>`).join('')||'<div class="empty-card">No matching messages found.</div>';
+        $('#chat-search-results').querySelectorAll('[data-conversation]').forEach(b=>b.onclick=()=>{window.dispatchEvent(new CustomEvent('jarvis:navigate',{detail:'chat'}));window.dispatchEvent(new CustomEvent('jarvis:open-conversation',{detail:b.dataset.conversation}));});
+      }catch(e){toast(e.message);}
+      finally{button.disabled=false;button.textContent='Search history ↗';}
+    };
+    $('#run-chat-search').onclick=run;
+    $('#chat-search-query').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
   }
   async function renderSettings(){
     const user=getUser();let prefs=null;
