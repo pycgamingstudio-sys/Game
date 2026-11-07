@@ -155,7 +155,7 @@ function setupUI() {
 }
 async function start() {
   setupUI();
-  if(!configured){$('#setup-warning').hidden=false;return;}
+  if(!configured){$('#auth-screen').hidden=false;$('#setup-warning').hidden=false;return;}
   const {data:{session}}=await supabase.auth.getSession(); state.user=session?.user||null; setAuthView();
   supabase.auth.onAuthStateChange((_event,session)=>{state.user=session?.user||null;setAuthView();if(state.user)loadConversations();});
   if(state.user) await loadConversations();
