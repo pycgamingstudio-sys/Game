@@ -16,3 +16,11 @@ test("JARVIS X is configured as a light-first PWA", async () => {
   assert.match(manifest, /"display": "standalone"/);
   assert.doesNotMatch(html, /prefers-color-scheme:\s*dark/);
 });
+test("gateway restricts access and verifies approvals before side effects", async () => {
+  const worker = await readFile(new URL("../cloudflare/worker.js", import.meta.url), "utf8");
+  assert.match(worker, /JARVIS_OWNER_EMAILS/);
+  assert.match(worker, /jarvis_approvals/);
+  assert.match(worker, /approvedPayload\.files/);
+  assert.match(worker, /github\.create_repository/);
+  assert.match(worker, /cloudflare\.deploy_pages/);
+});
