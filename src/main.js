@@ -195,8 +195,13 @@ async function loadPreferences(){
 async function start() {
   setupUI();
   if(!configured){$('#auth-screen').hidden=false;$('#setup-warning').hidden=false;return;}
-  const {data:{session}}=await supabase.auth.getSession(); state.user=session?.user||null; setAuthView();
-  supabase.auth.onAuthStateChange((_event,session)=>{state.user=session?.user||null;setAuthView();if(state.user){loadPreferences();loadConversations();}});
+  const {data:{session}}=await supabase.auth.getSession(); state.user=session?.user||null;
+  if(state.user){
+    const {data:allowed,error:allowError}=await supabase.rpc('is_jarvis_allowed_user');
+    if(allowError||allowed!==true){await supabase.auth.signOut();state.user=null;setAuthView();toast('This Google account is not on the JARVIS X access list.');return;}
+  }
+  setAuthView();
+  supabase.auth.onAuthStateChange((_event,session)=>{if(!session){state.user=null;setAuthView();}});
   if(state.user) { await loadPreferences(); await loadConversations(); }
 }
 start();
