@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
   if (!apiKey) return reply({ error: "Gemini API key is not configured on the server yet." }, 503);
   try {
     const body = await req.json();
-    const model = ["gemini-2.5-flash", "gemini-2.5-pro"].includes(body.model) ? body.model : "gemini-2.5-flash";
+    const model = ["gemini-3.8-flash", "gemini-3.7-flash"].includes(body.model) ? body.model : "gemini-3.8-flash";
     const messages = Array.isArray(body.messages) ? body.messages.slice(-30) : [];
     if (!messages.length || messages.some((m: any) => !["user", "assistant"].includes(m.role) || typeof m.content !== "string")) {
       return reply({ error: "Invalid message history" }, 400);
@@ -74,9 +74,9 @@ Deno.serve(async (req: Request) => {
     const languageInstruction=preferences?.preferred_language==="hi"?" Reply in Hindi.":preferences?.preferred_language==="en"?" Reply in English.":preferences?.preferred_language==="hinglish"?" Reply naturally in Hinglish (Hindi mixed with English).":" Reply in the user's language.";
     const customInstructions=String(preferences?.custom_instructions||"").slice(0,3000);
     const systemText="You are JARVIS X, a capable, warm, accurate personal AI assistant. Be honest about limitations and never claim to have performed actions you did not perform."+languageInstruction+(customInstructions?"\\n\\nUser's personal instructions (follow unless unsafe or conflicting with higher-priority rules):\\n"+customInstructions:"");
-    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemText }] }, generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } })
+    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemText }] }, generationConfig: { maxOutputTokens: 4096 } })
     });
     const result = await upstream.json();
     if (!upstream.ok) return reply({ error: result.error?.message || "AI provider request failed" }, upstream.status);
