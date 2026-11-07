@@ -17,7 +17,7 @@ function toBase64(bytes: Uint8Array): string {
   }
   return btoa(binary);
 }
-async function attachmentPart(supabase: any, userId: string, attachment: any): Promise<any> {
+async function attachmentPart(supabase: any, userId: string, attachment: any): Promise<{part:any,size:number}> {
   const path = String(attachment.storagePath || "");
   const fileName = String(attachment.fileName || "attachment").slice(0,160);
   const mimeType = String(attachment.mimeType || "application/octet-stream").toLowerCase();
@@ -29,7 +29,7 @@ async function attachmentPart(supabase: any, userId: string, attachment: any): P
   const bytes = new Uint8Array(await response.arrayBuffer());
   if (bytes.byteLength > 15 * 1024 * 1024) throw new Error(fileName + " is too large for AI analysis (15 MB max).");
   if (mimeType.startsWith("image/") || mimeType === "application/pdf") {
-    return { inlineData: { mimeType, data: toBase64(bytes) } };
+    return { part:{ inlineData: { mimeType, data: toBase64(bytes) } }, size:bytes.byteLength };
   }
   if (mimeType.startsWith("text/") || ["application/json","text/csv"].includes(mimeType) || /\.(txt|md|csv|json)$/i.test(fileName)) {
     if (bytes.byteLength > 2 * 1024 * 1024) throw new Error(fileName + " is too large for text extraction (2 MB max).");
@@ -61,11 +61,12 @@ Deno.serve(async (req: Request) => {
       return reply({ error: "Invalid message history" }, 400);
     }
     const contents: any[] = [];
+    let attachmentBytesTotal=0;
     for (const message of messages) {
       const parts: any[] = [{ text: message.content.slice(0, 20000) }];
       if (message.role === "user" && Array.isArray(message.attachments)) {
         for (const attachment of message.attachments.slice(0, 4)) {
-          parts.push(await attachmentPart(supabase, user.id, attachment));
+          const prepared=await attachmentPart(supabase,user.id,attachment);\n          attachmentBytesTotal+=prepared.size;\n          if(attachmentBytesTotal>15*1024*1024)throw new Error('The total attachment size for this conversation request exceeds 15 MB.');\n          parts.push(prepared.part);
         }
       }
       contents.push({ role: message.role === "assistant" ? "model" : "user", parts });
