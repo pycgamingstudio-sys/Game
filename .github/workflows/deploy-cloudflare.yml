@@ -7,9 +7,13 @@ on:
         required: true
         type: string
       branch:
-        description: Source branch
+        description: Source repository branch
         required: true
-        default: jarvis-x-foundation
+        default: main
+        type: string
+      repository:
+        description: owner/repository to build and deploy
+        required: true
         type: string
 jobs:
   deploy:
@@ -19,7 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: ${{ inputs.repository }}
           ref: ${{ inputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN_JARVIS }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
