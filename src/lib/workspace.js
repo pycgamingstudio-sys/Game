@@ -87,7 +87,7 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
       const {error:saveError}=await supabase.from('jarvis_preferences').upsert({user_id:user.id,preferred_language:$('#pref-language').value,selected_model:selectedModel,custom_instructions:$('#pref-instructions').value.trim(),settings:{voice_output:$('#pref-voice').checked,voice_name:$('#pref-voice-name').value},updated_at:new Date().toISOString()});
       if(saveError)return toast(saveError.message);
       const modelSelect=$('#model-select');if(modelSelect){modelSelect.value=selectedModel;modelSelect.dispatchEvent(new Event('change'));}
-      window.dispatchEvent(new CustomEvent('jarvis:preferences-updated',{detail:{preferred_language:$('#pref-language').value,selected_model,voice_name:$('#pref-voice-name').value}}));toast('Preferences saved.');
+      window.dispatchEvent(new CustomEvent('jarvis:preferences-updated',{detail:{preferred_language:$('#pref-language').value,selected_model,voice_name:$('#pref-voice-name').value,voice_output:$('#pref-voice').checked}}));toast('Preferences saved.');
     };
   }
   async function renderImageStudio(){
