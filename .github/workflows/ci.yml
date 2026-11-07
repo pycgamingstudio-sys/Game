@@ -1,10 +1,12 @@
 name: JARVIS X checks
 on:
   push:
-    branches: [main, jarvis-x-foundation]
+    branches: ["**"]
   pull_request:
-    branches: [main]
+    branches: [main, jarvis-x-foundation]
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
