@@ -24,9 +24,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_JARVIS }}
           GITHUB_OWNER: ${{ secrets.GITHUB_OWNER }}
           GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
+          CLOUDFLARE_PAGES_READY: 'true'
         run: |
           set -euo pipefail
-          for key in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY JARVIS_OWNER_EMAILS APP_ORIGIN GITHUB_TOKEN GITHUB_OWNER GITHUB_REPO; do
+          for key in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY JARVIS_OWNER_EMAILS APP_ORIGIN GITHUB_TOKEN GITHUB_OWNER GITHUB_REPO CLOUDFLARE_PAGES_READY; do
             value="${!key}"
             if [ -z "$value" ]; then echo "Missing required secret: $key"; exit 1; fi
             printf '%s' "$value" | wrangler secret put "$key" --config cloudflare/wrangler.toml
