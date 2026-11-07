@@ -24,7 +24,7 @@ Deno.serve(async (req: Request) => {
   if (!apiKey) return reply({ error: "Gemini API key is not configured on the server yet." }, 503);
   try {
     const body = await req.json();
-    const model = ["gemini-2.5-flash", "gemini-2.5-pro"].includes(body.model) ? body.model : "gemini-2.5-flash";
+    const model = ["gemini-3.8-flash", "gemini-3.1-pro-preview"].includes(body.model) ? body.model : "gemini-3.8-flash";
     const messages = Array.isArray(body.messages) ? body.messages.slice(-30) : [];
     if (!messages.length || messages.some((m: any) => !["user", "assistant"].includes(m.role) || typeof m.content !== "string")) {
       return reply({ error: "Invalid message history" }, 400);
