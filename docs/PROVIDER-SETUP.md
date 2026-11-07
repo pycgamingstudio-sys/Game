@@ -17,6 +17,10 @@ Add these under Supabase Dashboard → Edge Functions → Secrets:
 - IMAGE_PROVIDER_API_KEY — image provider key if using a separate provider.
 - TTS_API_KEY — speech provider key if using a separate provider.
 - APP_ORIGIN — exact deployed frontend origin for CORS, e.g. https://app.example.com.
+- JARVIS_GATEWAY_URL — deployed Cloudflare Worker gateway URL used by the agent after approval.
+
+## Cloudflare Worker and GitHub Actions secrets
+The Worker deployment workflow reads these GitHub repository Actions secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, JARVIS_OWNER_EMAILS, APP_ORIGIN, GITHUB_TOKEN_JARVIS, GITHUB_OWNER, and GITHUB_REPO. The Worker only accepts users whose verified email is listed in JARVIS_OWNER_EMAILS. The Pages deployment workflow also requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 
 ## Dashboard configuration (not Edge Function secrets)
 - Supabase Auth → Providers → Google: configure OAuth Client ID and Client Secret.
