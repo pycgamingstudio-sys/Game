@@ -41,7 +41,7 @@ Deno.serve(async(req:Request)=>{
     if(!gateway)return json({approval:data,execution:{status:"waiting_for_gateway"},message:"Approved. Add JARVIS_GATEWAY_URL to Supabase Edge Function Secrets to enable execution."});
     const route=data.action==="github.create_repository"?"/api/github/repositories":"/api/deploy/cloudflare";
     const payload=data.action==="github.create_repository"?{...data.payload,approvalId:id}:{projectName:data.payload?.projectName,ref:data.payload?.ref,approvalId:id};
-    const executionResponse=await fetch(gateway.replace(/\\/$/,"")+route,{method:"POST",headers:{"Authorization":auth,"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const executionResponse=await fetch((gateway.endsWith("/")?gateway.slice(0,-1):gateway)+route,{method:"POST",headers:{"Authorization":auth,"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const execution=await executionResponse.json();
     await supabase.from("jarvis_audit_logs").insert({user_id:user.id,action:"approval.execution_attempted",target:id,status:executionResponse.ok?"success":"failed",details:execution});
     return json({approval:data,execution,message:executionResponse.ok?"Approved action submitted to the connected provider.":"Approval saved, but provider execution failed."},executionResponse.ok?200:502);
