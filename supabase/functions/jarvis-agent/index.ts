@@ -3,7 +3,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const cors={"Access-Control-Allow-Origin":Deno.env.get("APP_ORIGIN")||"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
 const required:Record<string,string[]>={gemini:["GEMINI_API_KEY"],github:["GITHUB_TOKEN"],cloudflare:["CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID"],search:["SEARCH_API_KEY"],image:["IMAGE_PROVIDER_API_KEY"],speech:["TTS_API_KEY"],email:["EMAIL_PROVIDER_API_KEY"]};
-const configured=(provider:string)=>(required[provider]||[]).every(key=>Boolean(Deno.env.get(key)));
+const configured=(provider:string)=>(required[provider]||[]).every(key=>Boolean(Deno.env.get(key)));\nasync function gatewayProviders(auth:string):Promise<Record<string,boolean>> {
+ const gateway=Deno.env.get("JARVIS_GATEWAY_URL");
+ if(!gateway)return {};
+ try{
+  const base=gateway.endsWith("/")?gateway.slice(0,-1):gateway;
+  const response=await fetch(base+"/capabilities",{headers:{Authorization:auth}});
+  if(!response.ok)return {};
+  const result=await response.json();
+  return result.providers||{};
+ }catch{return {};}
+}
+
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
  if(req.method!=="POST")return json({error:"Method not allowed"},405);
@@ -14,7 +25,15 @@ Deno.serve(async(req:Request)=>{
  const {data:{user},error:authError}=await supabase.auth.getUser();if(authError||!user)return json({error:"Invalid session"},401);
  try{
   const body=await req.json(),task=String(body.task||""),p=body.payload&&typeof body.payload==="object"?body.payload:{};
-  if(task==="capabilities")return json({providers:Object.keys(required).map(id=>({id,configured:configured(id),requiredSecrets:required[id]}))});
+  if(task==="capabilities"){
+   const gateway=await gatewayProviders(auth);
+   const providers=Object.keys(required).map(id=>{
+    if(id==="github")return {id,configured:Boolean(gateway.github),requiredSecrets:["GITHUB_TOKEN_JARVIS","GITHUB_OWNER","GITHUB_REPO"]};
+    if(id==="cloudflare")return {id,configured:Boolean(gateway.cloudflare),requiredSecrets:["CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID","JARVIS_GATEWAY_URL"]};
+    return {id,configured:configured(id),requiredSecrets:required[id]};
+   });
+   return json({providers});
+  }
   if(task==="create_project"){
    const name=String(p.name||"").trim().slice(0,100);if(!name)return json({error:"Project name is required."},400);
    const {data,error}=await supabase.from("jarvis_projects").insert({user_id:user.id,name,description:String(p.description||"").slice(0,2000),project_type:String(p.projectType||"general").slice(0,40)}).select().single();
@@ -65,7 +84,10 @@ Deno.serve(async(req:Request)=>{
   if(task==="run_agent"){
    const goal=String(p.goal||"").trim().slice(0,4000);if(!goal)return json({error:"Describe what you want the agent to do."},400);
    if(!configured("gemini"))return json({error:"AI planning requires the Gemini API key.",missingProviders:["gemini"]},503);
-   const available=Object.keys(required).filter(configured);
+   const gateway=await gatewayProviders(auth);
+   const available=Object.keys(required).filter(id=>!["github","cloudflare"].includes(id)&&configured(id));
+   if(gateway.github)available.push("github");
+   if(gateway.cloudflare)available.push("cloudflare");
    const planResponse=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+encodeURIComponent(Deno.env.get("GEMINI_API_KEY")!),{
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
