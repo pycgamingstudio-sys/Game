@@ -1,43 +1,32 @@
-# JARVIS X — Personal Intelligence
+# JARVIS X — Private Personal Intelligence
 
-A light-first, responsive personal AI workspace with a pearl, ivory and champagne visual system.
+A local-first, single-owner AI workspace. The app opens directly into the workspace: no sign-in, signup, OTP, Google Auth, public launch or subscription flow.
 
-## Current foundation
-- Vite frontend, mobile-responsive layout and installable PWA metadata.
-- Supabase Auth (Google OAuth flow), private conversation history and owner-scoped database policies.
-- Projects, personal memories, agent task/approval screens and integration status panel.
-- Private file bucket with per-user storage policies.
-- Gemini chat Edge Function and authenticated agent orchestration endpoint.
-- Feature registry and integration secret checklist.
-- Build and unit-test workflow.
+## Private local mode
+- Chat history is stored in this browser's local storage on this device.
+- Voice input uses browser speech recognition where available; read-aloud uses browser speech synthesis.
+- The UI opens even before any provider API is configured.
+- Do not publish this build to a public URL. The local access key is intended only for a private, single-user local setup.
 
-## Local development
-1. Copy .env.example to .env and fill the Supabase URL and publishable key.
-2. npm install
-3. npm run dev
-4. npm test && npm run build
+## Run
+1. Copy `.env.example` to `.env.local`.
+2. Fill in the Supabase project URL, publishable key and a long random local access key.
+3. Set the same local access key as the Supabase Edge Function secret `JARVIS_LOCAL_ACCESS_KEY`.
+4. Set `GEMINI_API_KEY` as a Supabase Edge Function secret when ready.
+5. Install dependencies with `npm install`, then run `npm run dev`.
 
-## Supabase setup
-- Project ref: tmlrveloeirxsankeqrs (Driver saathi; Plivex is not used).
-- Migrations: supabase/migrations.
-- Edge Functions: jarvis-chat and jarvis-agent.
-- Configure Google OAuth under Supabase Auth providers and allowed redirect URLs.
-- Add provider credentials through Supabase Edge Function Secrets, never frontend environment variables.
+The UI opens directly at the local Vite address. No user account is required.
 
-## Integration secrets
-- GEMINI_API_KEY
-- GITHUB_TOKEN
-- CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
-- SEARCH_API_KEY
-- IMAGE_PROVIDER_API_KEY
-- TTS_API_KEY
-- EMAIL_PROVIDER_API_KEY
-- APP_ORIGIN
+## Current capabilities and staged integrations
+- Local chat sessions and history.
+- Browser speech input and read-aloud.
+- Text/CSV/JSON/Markdown attachments plus PDF/image request payload support.
+- Project, Agent Studio, Memory, Activity and Integrations workspace screens.
+- Planned provider adapters: Gemini, GitHub (repositories, branches, commits, pull requests), Cloudflare, web research, image generation and voice.
+- GitHub and Cloudflare actions must be permission-checked and require explicit approval for writes/deployments.
 
-A credential being present is not proof that provider permissions, OAuth consent, billing, account ownership or deployment configuration are complete.
+## Security boundary
+This is a personal local app, not a public multi-user service. Never commit API keys. Keep the local access key out of Git, bind local development to localhost, and do not deploy this frontend publicly: a browser-held local key can be extracted by anyone who can access the app. For remote/private access, add a server-side authenticated gateway first.
 
-## Safety model
-Read-only tools may run when permissions are available. Repository writes, deployments, sending messages, destructive changes and other high-impact operations must have explicit user approval and an audit record.
-
-## Important status
-This is an active foundation, not a claim of full ChatGPT feature parity. External integrations are not operational until their providers are configured and end-to-end tests pass.
+## Honest status
+The interface and local-first conversation foundation are being built before provider credentials are added. A feature shown in the workspace is not considered operational until its provider adapter, permission checks and end-to-end tests are implemented.
