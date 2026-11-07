@@ -12,7 +12,7 @@ const supabase = configured ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseKe
 }) : null;
 
 const $ = (selector) => document.querySelector(selector);
-const state = { user: null, conversations: [], activeId: null, messages: [], model: 'gemini-3.8-flash', language:'auto', voice:state.voice, busy: false, files: [] };
+const state = { user: null, conversations: [], activeId: null, messages: [], model: 'gemini-3.8-flash', language:'auto', voice:'Kore', busy: false, files: [] };
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -76,7 +76,7 @@ function renderMessages() {
     if (!msg?.content) return;
     button.disabled=true;
     try {
-      const {data,error}=await supabase.functions.invoke('jarvis-tts',{body:{text:msg.content,voice:'Kore'}});
+      const {data,error}=await supabase.functions.invoke('jarvis-tts',{body:{text:msg.content,voice:state.voice}});
       if(error)throw new Error(error.message||'Speech generation failed.');
       if(data?.error)throw new Error(data.error);
       const audio=new Audio(data.audioUrl);await audio.play();
