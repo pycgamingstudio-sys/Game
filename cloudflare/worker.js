@@ -34,7 +34,7 @@ export default {
   try{
    const auth=await authenticate(request,env);
    if(url.pathname==="/capabilities"&&request.method==="GET"){
-    return json({providers:{gemini:Boolean(env.GEMINI_API_KEY),github:Boolean(env.GITHUB_TOKEN),cloudflareDeploy:Boolean(env.GITHUB_TOKEN&&env.GITHUB_OWNER&&env.GITHUB_REPO),supabase:Boolean(env.SUPABASE_URL&&env.SUPABASE_PUBLISHABLE_KEY)}},200,headers);
+    return json({providers:{gemini:Boolean(env.GEMINI_API_KEY),github:Boolean(env.GITHUB_TOKEN),cloudflare:Boolean(env.GITHUB_TOKEN&&env.GITHUB_OWNER&&env.GITHUB_REPO&&env.CLOUDFLARE_PAGES_READY==="true"),supabase:Boolean(env.SUPABASE_URL&&env.SUPABASE_PUBLISHABLE_KEY)}},200,headers);
    }
    if(url.pathname==="/api/github/repositories"&&request.method==="POST"){
     const body=await request.json();
