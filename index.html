@@ -44,5 +44,10 @@
     </main>
   </div>
   <div id="toast" class="toast" role="status"></div>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+    }
+  </script>
   <script type="module" src="/src/main.js"></script>
 </body></html>
