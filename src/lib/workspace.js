@@ -6,7 +6,7 @@ const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 export function initializeWorkspace({supabase,getUser,toast,onChat}) {
   const area=$('#messages');
   let lastPlan=null;
-  const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',research:'Research',memory:'Memory',activity:'Activity',integrations:'Integrations'};
+  const labels={chat:'Chats',projects:'Projects',tools:'Agent studio',research:'Research',images:'Image studio',memory:'Memory',activity:'Activity',integrations:'Integrations'};
   async function refresh(){return await loadWorkspace(supabase);}
   function activate(view){
     document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b.dataset.view===view));
@@ -15,6 +15,7 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
     if(view==='chat'){onChat?.();return;}
     if(view==='integrations')return renderIntegrations();
     if(view==='research')return renderResearch();
+    if(view==='images')return renderImageStudio();
     render(view);
   }
   async function render(view){
@@ -34,6 +35,20 @@ export function initializeWorkspace({supabase,getUser,toast,onChat}) {
       area.querySelectorAll('[data-decision]').forEach(b=>b.onclick=async()=>{try{const result=await invokeAgent(supabase,'decide_approval',{approvalId:b.dataset.id,decision:b.dataset.decision});const url=result.execution?.repository?.url||result.execution?.deploymentUrl;toast(url?`Ready: ${url}`:(result.message||'Approval updated.'));render(view);}catch(e){toast(e.message);}});
       area.querySelectorAll('[data-execute]').forEach(b=>b.onclick=async()=>{try{const result=await invokeAgent(supabase,'execute_approved',{approvalId:b.dataset.execute});const url=result.execution?.repository?.url||result.execution?.deploymentUrl;toast(url?`Ready: ${url}`:(result.execution?.message||'Execution submitted.'));render(view);}catch(e){toast(e.message);}});
     }
+  }
+  async function renderImageStudio(){
+    area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">CREATIVE STUDIO</p><h2>Image studio</h2><p>Create images from a prompt and keep them in your private workspace.</p></div></div><div class="research-launch"><textarea id="image-prompt" rows="4" placeholder="Describe the image in detail…"></textarea><div class="image-controls"><label>Aspect ratio <select id="image-ratio"><option>1:1</option><option>16:9</option><option>9:16</option><option>3:2</option><option>2:3</option><option>4:3</option><option>3:4</option><option>4:5</option><option>5:4</option><option>21:9</option></select></label><button class="gold-button" id="generate-image">Generate image ↗</button></div><small class="image-note">Image generation uses your Gemini API key. Provider billing or model access may be required.</small></div><div id="image-result"></div></div>`;
+    $('#generate-image').onclick=async()=>{
+      const prompt=$('#image-prompt').value.trim();if(!prompt)return toast('Describe the image first.');
+      const button=$('#generate-image');button.disabled=true;button.textContent='Creating image…';
+      try{
+        const {data,error}=await supabase.functions.invoke('jarvis-image',{body:{prompt,aspectRatio:$('#image-ratio').value}});
+        if(error)throw new Error(error.message||'Image generation failed.');
+        if(data?.error)throw new Error(data.error);
+        $('#image-result').innerHTML=`<article class="generated-image-card"><img src="${esc(data.imageUrl)}" alt="${esc(data.fileName||'Generated image')}"><div><b>${esc(data.fileName||'Generated image')}</b><small>Saved privately · ${Math.round((data.size||0)/1024)} KB</small><a href="${esc(data.imageUrl)}" target="_blank" rel="noreferrer">Open image ↗</a></div></article>`;
+      }catch(e){toast(e.message);}
+      finally{button.disabled=false;button.textContent='Generate image ↗';}
+    };
   }
   async function renderResearch(){
     area.innerHTML=`<div class="page-view"><div class="page-heading"><div><p class="welcome-kicker">LIVE WEB KNOWLEDGE</p><h2>Research</h2><p>Search the web, compare sources and get a cited summary.</p></div></div><div class="research-launch"><textarea id="research-query" rows="3" placeholder="What would you like me to research?"></textarea><button class="gold-button" id="run-research">Research with sources ↗</button></div><div id="research-result"></div></div>`;
