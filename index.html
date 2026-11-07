@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/jarvis-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <section id="auth-screen" class="auth-screen" hidden>
@@ -23,7 +23,14 @@
     <aside id="sidebar" class="sidebar">
       <a class="brand" href="#"><span class="brand-mark small">✳</span><span>JARVIS <b>X</b><small>PERSONAL INTELLIGENCE</small></span></a>
       <button id="new-chat" class="new-chat"><span>＋</span> New chat <kbd>⌘ K</kbd></button>
-      <nav class="primary-nav"><button class="nav-item selected"><span>▤</span> Chats</button><button class="nav-item" disabled title="Coming soon"><span>⌕</span> Search</button><button class="nav-item" disabled title="Coming soon"><span>◇</span> Projects</button><button class="nav-item" disabled title="Coming soon"><span>✧</span> Explore tools</button></nav>
+      <nav class="primary-nav">
+        <button class="nav-item selected" data-view="chat"><span>▤</span> Chats</button>
+        <button class="nav-item" data-view="projects"><span>◇</span> Projects</button>
+        <button class="nav-item" data-view="tools"><span>✧</span> Agent studio</button>
+        <button class="nav-item" data-view="memory"><span>⌑</span> Memory</button>
+        <button class="nav-item" data-view="activity"><span>◷</span> Activity & approvals</button>
+        <button class="nav-item" data-view="integrations"><span>⌘</span> Integrations</button>
+      </nav>
       <div class="history-heading">RECENT</div><div id="history-list" class="history-list"></div>
       <div class="sidebar-bottom"><div class="plan-card"><span class="plan-icon">✧</span><div><b>Your workspace</b><small>Personal · Private</small></div><span class="plan-dot"></span></div>
         <div class="profile-row"><div id="profile-avatar" class="avatar">J</div><div class="profile-meta"><b id="profile-name">Account</b><small id="profile-email"></small></div><button id="signout-button" class="icon-button" title="Sign out">↗</button></div>
@@ -31,7 +38,7 @@
     </aside>
     <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
     <main class="main-panel">
-      <header class="topbar"><button id="menu-button" class="icon-button menu-toggle" aria-label="Open menu">☰</button><div class="breadcrumb">Workspace <span>/</span> <b>New conversation</b></div><div class="topbar-right"><span id="theme-note" class="theme-note"></span><select id="model-select" aria-label="Choose model"><option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-2.5-pro">Gemini 2.5 Pro</option></select><button class="icon-button settings-button" title="Settings">⚙</button></div></header>
+      <header class="topbar"><button id="menu-button" class="icon-button menu-toggle" aria-label="Open menu">☰</button><div class="breadcrumb">Workspace <span>/</span> <b>New conversation</b></div><div class="topbar-right"><span id="theme-note" class="theme-note"></span><select id="model-select" aria-label="Choose model"><option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-2.5-pro">Gemini 2.5 Pro</option></select><button id="settings-button" class="icon-button settings-button" title="Integrations and settings">⚙</button></div></header>
       <section id="messages" class="messages"><div class="welcome"><div class="welcome-mark"><span>✳</span></div><p class="welcome-kicker">YOUR PERSONAL INTELLIGENCE</p><h1>What can I help<br><em>you with today?</em></h1></div></section>
       <footer class="composer-wrap"><div class="composer-shell"><div id="attachment-note" class="attachment-note" hidden></div><textarea id="composer-input" rows="1" placeholder="Message Jarvis X..." aria-label="Message Jarvis X"></textarea><div class="composer-actions"><div class="composer-left"><button id="attach-button" class="tool-button" title="Attach files">＋ <span>Attach</span></button><input id="file-input" type="file" multiple hidden accept="image/*,.pdf,.txt,.md,.doc,.docx,.csv,.xlsx"><button id="voice-button" class="tool-button" title="Voice input">♩ <span>Voice</span></button></div><div class="composer-right"><span class="composer-hint">Shift + Enter for new line</span><button id="send-button" class="send-button" aria-label="Send message">↑</button></div></div></div><p class="disclaimer">Jarvis X can make mistakes. Verify important information.</p></footer>
     </main>
