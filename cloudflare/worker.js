@@ -75,7 +75,7 @@ export default {
     const response=await fetch(endpoint,{method:"POST",headers:{authorization:"Bearer "+env.GITHUB_TOKEN,accept:"application/vnd.github+json","content-type":"application/json","x-github-api-version":"2022-11-28","user-agent":"JARVIS-X"},body:JSON.stringify({ref:"jarvis-x-foundation",inputs:{project_name:projectName,branch:ref,repository}})});
     if(!response.ok){const result=await response.json();return json({error:result.message||"Could not start Cloudflare deployment."},response.status,headers);}
     await audit(env,auth,"cloudflare.deployment_requested",projectName,{ref});
-    return json({success:true,message:"Cloudflare deployment workflow started.",projectName,workflow:"deploy-cloudflare.yml"},202,headers);
+    return json({success:true,status:"queued",message:"Cloudflare deployment workflow started.",projectName,deploymentUrl:"https://"+projectName+".pages.dev",repository,branch:ref,workflow:"deploy-cloudflare.yml"},202,headers);
    }
    return json({error:"Route not found."},404,headers);
   }catch(error){return json({error:error instanceof Error?error.message:"Gateway error."},401,headers);}
