@@ -102,14 +102,12 @@ async function sendMessage() {
   const typing = document.createElement('div'); typing.className='typing-indicator'; typing.innerHTML='<span></span><span></span><span></span>'; $('#messages').append(typing);
   try {
     if (!CONFIG.chatFunction) throw new Error('AI endpoint is not configured yet. Add the Gemini API key to the secure server function to enable replies.');
-    const { data: { session } } = await supabase.auth.getSession();
-    const response = await fetch(CONFIG.chatFunction, {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
-      body:JSON.stringify({conversationId:state.activeId,model:state.model,messages:state.messages.slice(-30).map(({role,content})=>({role,content}))})
+    const { data: result, error: invokeError } = await supabase.functions.invoke('jarvis-chat', {
+      body:{conversationId:state.activeId,model:state.model,messages:state.messages.slice(-30).map(({role,content})=>({role,content}))}
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'The assistant could not respond.');
-    const answer = result.reply || 'I could not generate a response.';
+    if (invokeError) throw new Error(invokeError.message || 'The assistant could not respond.');
+    if (result?.error) throw new Error(result.error);
+    const answer = result?.reply || 'I could not generate a response.';
     state.messages.push({role:'assistant',content:answer}); typing.remove(); renderMessages();
     await supabase.from('jarvis_messages').insert({conversation_id:state.activeId,user_id:state.user.id,role:'assistant',content:answer,model:state.model});
     const current = state.conversations.find(c=>c.id===state.activeId);
