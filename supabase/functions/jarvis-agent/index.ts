@@ -61,7 +61,7 @@ Deno.serve(async(req:Request)=>{
   for(const file of scaffold.files){
    if(typeof file.path!=="string"||typeof file.content!=="string"||file.content.length>45000||file.path.startsWith("/")||file.path.split("/").some((part:string)=>part===".."||part==="."))return json({error:"Generated project contains an unsafe or oversized file path."},502);
   }
-  const created=await fetch("https://api.github.com/user/repos",{method:"POST",headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"},body:JSON.stringify({name,description:String(scaffold.description||goal).slice(0,350),private:true,auto_init:true})});
+  const paths=new Set<string>();for(const file of scaffold.files){if(paths.has(file.path))return json({error:"Generated project contains duplicate file paths."},502);paths.add(file.path);}\n  const created=await fetch("https://api.github.com/user/repos",{method:"POST",headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"},body:JSON.stringify({name,description:String(scaffold.description||goal).slice(0,350),private:true,auto_init:false})});
   const repository=await created.json();
   if(!created.ok)return json({error:repository.message||"GitHub repository creation failed."},created.status);
   const uploaded:string[]=[];
@@ -74,7 +74,7 @@ Deno.serve(async(req:Request)=>{
    if(!put.ok){const failure=await put.json();return json({error:"Repository created, but upload failed at "+file.path+": "+(failure.message||"GitHub error"),repository:{name:repository.name,full_name:repository.full_name,url:repository.html_url,private:true},uploadedFiles:uploaded},502);}
    uploaded.push(file.path);
   }
-  return json({repository:{name:repository.name,full_name:repository.full_name,url:repository.html_url,private:true,default_branch:repository.default_branch},files:uploaded,message:"Private GitHub project created and starter files uploaded."});
+  return json({repository:{name:repository.name,full_name:repository.full_name,url:repository.html_url,private:true,default_branch:repository.default_branch||"main"},files:uploaded,message:"Private GitHub project created and starter files uploaded."});
  }
  if(task==="create_github_repository"){
   const token=Deno.env.get("GITHUB_TOKEN");
