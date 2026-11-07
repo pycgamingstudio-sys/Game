@@ -12,7 +12,7 @@ const supabase = configured ? createClient(CONFIG.supabaseUrl, CONFIG.supabaseKe
 }) : null;
 
 const $ = (selector) => document.querySelector(selector);
-const state = { user: null, conversations: [], activeId: null, messages: [], model: 'gemini-3.8-flash', busy: false, files: [] };
+const state = { user: null, conversations: [], activeId: null, messages: [], model: 'gemini-3.8-flash', language:'auto', voice:state.voice, busy: false, files: [] };
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -157,6 +157,7 @@ function closeSidebar(){ $('#sidebar').classList.remove('open'); $('#sidebar-bac
 function setupUI() {
   $('#new-chat').addEventListener('click',newConversation);
   window.addEventListener('jarvis:open-conversation',event=>openConversation(event.detail));
+  window.addEventListener('jarvis:preferences-updated',event=>{state.language=event.detail?.preferred_language||state.language;state.model=event.detail?.selected_model||state.model;state.voice=event.detail?.voice_name||state.voice;$('#model-select').value=state.model;});
   $('#send-button').addEventListener('click',sendMessage);
   $('#composer-input').addEventListener('input',resizeComposer);
   $('#composer-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
@@ -187,8 +188,8 @@ function setupUI() {
 }
 async function loadPreferences(){
   if(!state.user)return;
-  const {data}=await supabase.from('jarvis_preferences').select('selected_model').eq('user_id',state.user.id).maybeSingle();
-  if(data?.selected_model){state.model=data.selected_model;$('#model-select').value=state.model;}
+  const {data}=await supabase.from('jarvis_preferences').select('selected_model,preferred_language,settings').eq('user_id',state.user.id).maybeSingle();
+  if(data?.selected_model){state.model=data.selected_model;$('#model-select').value=state.model;}if(data?.preferred_language)state.language=data.preferred_language;if(data?.settings?.voice_name)state.voice=data.settings.voice_name;
 }
 async function start() {
   setupUI();
