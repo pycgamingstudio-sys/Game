@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
     if (!messages.length || messages.some((m: any) => !["user", "assistant"].includes(m.role) || typeof m.content !== "string")) {
       return reply({ error: "Invalid message history" }, 400);
     }
-    const contents = [];
+    const contents: any[] = [];
     for (const message of messages) {
       const parts: any[] = [{ text: message.content.slice(0, 20000) }];
       if (message.role === "user" && Array.isArray(message.attachments)) {
