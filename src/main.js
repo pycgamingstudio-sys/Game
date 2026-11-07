@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { initializeWorkspace } from './lib/workspace.js';
 
 const CONFIG = {
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
@@ -152,6 +153,7 @@ function setupUI() {
     if(error)toast(error.message);
   });
   $('#theme-note').textContent='Pearl · Champagne · Ivory';
+  initializeWorkspace({supabase,getUser:()=>state.user,toast});
 }
 async function start() {
   setupUI();
