@@ -67,11 +67,12 @@ export default {
     const body=await request.json();
     const approved=await approval(env,auth,body.approvalId,"cloudflare.deploy_pages");
     const projectName=String(approved.payload?.projectName||"").toLowerCase().replace(/[^a-z0-9-]/g,"-").slice(0,58);
-    if(!projectName)return json({error:"The approved request does not include a Pages project name."},400,headers);
+    const repository=String(approved.payload?.repository||"");
+    if(!projectName||!repository.startsWith((env.GITHUB_OWNER||"")+"/"))return json({error:"The approved request must include a valid Pages project name and repository owned by this GitHub account."},400,headers);
     if(!env.GITHUB_TOKEN||!env.GITHUB_OWNER||!env.GITHUB_REPO)return json({error:"GitHub workflow dispatch integration is not configured."},503,headers);
-    const ref=String(approved.payload?.ref||"jarvis-x-foundation");
+    const ref=String(approved.payload?.branch||"main");
     const endpoint="https://api.github.com/repos/"+env.GITHUB_OWNER+"/"+env.GITHUB_REPO+"/actions/workflows/deploy-cloudflare.yml/dispatches";
-    const response=await fetch(endpoint,{method:"POST",headers:{authorization:"Bearer "+env.GITHUB_TOKEN,accept:"application/vnd.github+json","content-type":"application/json","x-github-api-version":"2022-11-28","user-agent":"JARVIS-X"},body:JSON.stringify({ref,inputs:{project_name:projectName,branch:ref}})});
+    const response=await fetch(endpoint,{method:"POST",headers:{authorization:"Bearer "+env.GITHUB_TOKEN,accept:"application/vnd.github+json","content-type":"application/json","x-github-api-version":"2022-11-28","user-agent":"JARVIS-X"},body:JSON.stringify({ref:"jarvis-x-foundation",inputs:{project_name:projectName,branch:ref,repository}})});
     if(!response.ok){const result=await response.json();return json({error:result.message||"Could not start Cloudflare deployment."},response.status,headers);}
     await audit(env,auth,"cloudflare.deployment_requested",projectName,{ref});
     return json({success:true,message:"Cloudflare deployment workflow started.",projectName,workflow:"deploy-cloudflare.yml"},202,headers);
